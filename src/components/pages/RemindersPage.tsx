@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Icon from "@/components/ui/icon";
 import ReminderModal, { type NewReminder } from "@/components/ReminderModal";
+import SwipeRow from "@/components/SwipeRow";
 
 interface Reminder {
   id: number;
@@ -26,6 +27,10 @@ const RemindersPage = () => {
 
   const toggleActive = (id: number) => {
     setReminders((prev) => prev.map((r) => r.id === id ? { ...r, active: !r.active } : r));
+  };
+
+  const remove = (id: number) => {
+    setReminders((prev) => prev.filter((r) => r.id !== id));
   };
 
   const addReminder = (r: NewReminder) => {
@@ -55,7 +60,11 @@ const RemindersPage = () => {
 
       <div className="reminder-list">
         {reminders.map((r) => (
-          <div key={r.id} className={`reminder-card ${!r.active ? "reminder-card--inactive" : ""}`}>
+          <SwipeRow
+            key={r.id}
+            onDelete={() => remove(r.id)}
+            className={`reminder-card ${!r.active ? "reminder-card--inactive" : ""}`}
+          >
             <div className="reminder-icon-wrap">
               <Icon name={r.icon} size={18} />
             </div>
@@ -70,11 +79,11 @@ const RemindersPage = () => {
             </div>
             <button
               className={`toggle-switch ${r.active ? "toggle-switch--on" : ""}`}
-              onClick={() => toggleActive(r.id)}
+              onClick={(e) => { e.stopPropagation(); toggleActive(r.id); }}
             >
               <span className="toggle-knob" />
             </button>
-          </div>
+          </SwipeRow>
         ))}
       </div>
 

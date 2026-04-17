@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Icon from "@/components/ui/icon";
 import TaskModal, { type NewTask } from "@/components/TaskModal";
+import SwipeRow from "@/components/SwipeRow";
 
 type Priority = "high" | "medium" | "low";
 type Filter = "all" | "active" | "done";
@@ -44,6 +45,10 @@ const TasksPage = () => {
     setTasks((prev) => prev.map((t) => t.id === id ? { ...t, done: !t.done } : t));
   };
 
+  const remove = (id: number) => {
+    setTasks((prev) => prev.filter((t) => t.id !== id));
+  };
+
   const addTask = (newTask: NewTask) => {
     setTasks((prev) => [...prev, {
       id: Date.now(),
@@ -75,7 +80,6 @@ const TasksPage = () => {
         </div>
       </div>
 
-      {/* Filter tabs */}
       <div className="filter-tabs">
         {(["all", "active", "done"] as Filter[]).map((f) => (
           <button
@@ -88,13 +92,13 @@ const TasksPage = () => {
         ))}
       </div>
 
-      {/* Task list */}
       <div className="task-list">
         {filtered.map((task) => (
-          <div
+          <SwipeRow
             key={task.id}
-            className={`task-row-full ${task.done ? "task-row--done" : ""}`}
+            onDelete={() => remove(task.id)}
             onClick={() => toggle(task.id)}
+            className={`task-row-full ${task.done ? "task-row--done" : ""}`}
           >
             <div className={`task-check ${task.done ? "task-check--done" : ""}`}>
               {task.done && <Icon name="Check" size={12} />}
@@ -108,7 +112,7 @@ const TasksPage = () => {
               </div>
             </div>
             <span className={`priority-dot ${priorityColors[task.priority]}`} />
-          </div>
+          </SwipeRow>
         ))}
         {filtered.length === 0 && (
           <div className="empty-state">
@@ -118,7 +122,6 @@ const TasksPage = () => {
         )}
       </div>
 
-      {/* FAB */}
       <button className="fab" onClick={() => setModalOpen(true)}>
         <Icon name="Plus" size={22} />
       </button>
