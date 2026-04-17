@@ -662,6 +662,14 @@
   opacity: 0.4;
 }
 
+.reminder-advance {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: hsl(var(--primary));
+  font-weight: 500;
+}
+
 .add-reminder-btn {
   width: 100%;
   padding: 14px;

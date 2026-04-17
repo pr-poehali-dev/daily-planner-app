@@ -12,14 +12,24 @@ interface Reminder {
   repeat: string;
   active: boolean;
   icon: string;
+  advance: string;
 }
 
+const advanceLabel: Record<string, string> = {
+  none: "",
+  "1h": "за 1 час",
+  "3h": "за 3 часа",
+  "6h": "за 6 часов",
+  "1d": "за 1 день",
+  "2d": "за 2 дня",
+};
+
 const initialReminders: Reminder[] = [
-  { id: 1, title: "Утренняя зарядка", time: "07:30", date: "Каждый день", repeat: "daily", active: true, icon: "Sun" },
-  { id: 2, title: "Обед", time: "13:00", date: "По будням", repeat: "weekdays", active: true, icon: "Coffee" },
-  { id: 3, title: "Встреча с командой", time: "15:00", date: "Сегодня, 17 апр", repeat: "once", active: true, icon: "Users" },
-  { id: 4, title: "Вечерняя прогулка", time: "19:00", date: "Каждый день", repeat: "daily", active: false, icon: "Moon" },
-  { id: 5, title: "Планирование недели", time: "09:00", date: "По понедельникам", repeat: "weekly", active: true, icon: "LayoutList" },
+  { id: 1, title: "Утренняя зарядка", time: "07:30", date: "Каждый день", repeat: "daily", active: true, icon: "Sun", advance: "none" },
+  { id: 2, title: "Обед", time: "13:00", date: "По будням", repeat: "weekdays", active: true, icon: "Coffee", advance: "none" },
+  { id: 3, title: "Встреча с командой", time: "15:00", date: "Сегодня, 17 апр", repeat: "once", active: true, icon: "Users", advance: "1h" },
+  { id: 4, title: "Вечерняя прогулка", time: "19:00", date: "Каждый день", repeat: "daily", active: false, icon: "Moon", advance: "none" },
+  { id: 5, title: "Планирование недели", time: "09:00", date: "По понедельникам", repeat: "weekly", active: true, icon: "LayoutList", advance: "1d" },
 ];
 
 const RemindersPage = () => {
@@ -43,6 +53,7 @@ const RemindersPage = () => {
       repeat: r.repeat,
       active: true,
       icon: r.icon,
+      advance: r.advance,
     }]);
   };
 
@@ -76,6 +87,15 @@ const RemindersPage = () => {
                 <span>{r.time}</span>
                 <span className="reminder-sep">·</span>
                 <span>{r.date}</span>
+                {r.advance && r.advance !== "none" && (
+                  <>
+                    <span className="reminder-sep">·</span>
+                    <span className="reminder-advance">
+                      <Icon name="BellDot" size={11} />
+                      {advanceLabel[r.advance]}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
             <button

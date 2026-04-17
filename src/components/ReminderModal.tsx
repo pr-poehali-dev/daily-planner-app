@@ -7,6 +7,7 @@ export interface NewReminder {
   date: string;
   repeat: string;
   icon: string;
+  advance: string;
 }
 
 interface Props {
@@ -20,6 +21,15 @@ const repeatOptions = [
   { value: "daily", label: "Каждый день" },
   { value: "weekdays", label: "По будням" },
   { value: "weekly", label: "Еженедельно" },
+];
+
+const advanceOptions = [
+  { value: "none", label: "Без предупреждения" },
+  { value: "1h", label: "За 1 час" },
+  { value: "3h", label: "За 3 часа" },
+  { value: "6h", label: "За 6 часов" },
+  { value: "1d", label: "За 1 день" },
+  { value: "2d", label: "За 2 дня" },
 ];
 
 const iconOptions = [
@@ -39,6 +49,7 @@ const ReminderModal = ({ open, onClose, onSave }: Props) => {
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [repeat, setRepeat] = useState("once");
   const [icon, setIcon] = useState("Bell");
+  const [advance, setAdvance] = useState("none");
 
   useEffect(() => {
     if (open) {
@@ -47,6 +58,7 @@ const ReminderModal = ({ open, onClose, onSave }: Props) => {
       setDate(new Date().toISOString().split("T")[0]);
       setRepeat("once");
       setIcon("Bell");
+      setAdvance("none");
     }
   }, [open]);
 
@@ -61,7 +73,7 @@ const ReminderModal = ({ open, onClose, onSave }: Props) => {
 
   const handleSave = () => {
     if (!title.trim()) return;
-    onSave({ title: title.trim(), time, date: repeatLabel(), repeat, icon });
+    onSave({ title: title.trim(), time, date: repeatLabel(), repeat, icon, advance });
     onClose();
   };
 
@@ -111,6 +123,22 @@ const ReminderModal = ({ open, onClose, onSave }: Props) => {
               onChange={(e) => setDate(e.target.value)}
               disabled={repeat !== "once"}
             />
+          </div>
+        </div>
+
+        {/* Advance notice */}
+        <div className="modal-field">
+          <label className="modal-label">Напомнить заранее</label>
+          <div className="chip-row chip-row--wrap">
+            {advanceOptions.map((a) => (
+              <button
+                key={a.value}
+                className={`cat-chip ${advance === a.value ? "cat-chip--active" : ""}`}
+                onClick={() => setAdvance(a.value)}
+              >
+                {a.label}
+              </button>
+            ))}
           </div>
         </div>
 
