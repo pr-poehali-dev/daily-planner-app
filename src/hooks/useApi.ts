@@ -11,7 +11,7 @@ function getToken() {
 function authHeaders() {
   return {
     "Content-Type": "application/json",
-    "Authorization": `Bearer ${getToken()}`,
+    "X-Authorization": `Bearer ${getToken()}`,
   };
 }
 
