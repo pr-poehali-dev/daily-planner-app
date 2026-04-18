@@ -1,52 +1,26 @@
-/* ── Service Worker — Ежедневник ── */
+/* Service Worker — Ежедневник */
+const CACHE = "diary-v1";
+const CHECK_INTERVAL = 60; // секунд
 
-const CRON_URL = "https://functions.poehali.dev/b9e8fd82-350a-4c3b-b8d0-1a214e46f2f4";
-let cronTimer = null;
-
-self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("install", (e) => {
+  self.skipWaiting();
+});
 
 self.addEventListener("activate", (e) => {
   e.waitUntil(self.clients.claim());
-  startCron();
 });
 
-/* ── Фоновый cron прямо в SW: работает пока браузер запущен (вкладка закрыта — ок) ── */
-function startCron() {
-  if (cronTimer) return;
-  setTimeout(() => {
-    pingScheduler();
-    cronTimer = setInterval(pingScheduler, 60_000);
-  }, 3000);
-}
-
-function pingScheduler() {
-  fetch(CRON_URL, { method: "GET" }).catch(() => {});
-}
-
-/* ── Получаем push с сервера (браузер полностью закрыт — ОС будит SW) ── */
-self.addEventListener("push", (e) => {
-  e.waitUntil((async () => {
-    let data = { title: "Ежедневник", body: "Напоминание о задаче", tag: "push-" + Date.now() };
-    try { if (e.data) data = { ...data, ...JSON.parse(e.data.text()) }; } catch {}
-
-    await self.registration.showNotification(data.title, {
-      body: data.body,
-      tag: data.tag,
-      icon: "/favicon.svg",
-      badge: "/favicon.svg",
-      vibrate: [300, 100, 300, 100, 300],
-      requireInteraction: true,
-      actions: [
-        { action: "snooze", title: "⏱ Отложить 5 мин" },
-        { action: "dismiss", title: "✓ Выключить" },
-      ],
-      data,
-    });
-
-    // Если вкладка открыта — просим сыграть звук
-    const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-    clients.forEach((c) => c.postMessage({ type: "PLAY_ALARM", tag: data.tag }));
-  })());
+/* ── Слушаем сообщения от страницы ── */
+self.addEventListener("message", (e) => {
+  if (e.data?.type === "SCHEDULE_CHECKS") {
+    startChecking();
+  }
+  if (e.data?.type === "SNOOZE") {
+    snoozedTags.add(e.data.tag);
+  }
+  if (e.data?.type === "DISMISS") {
+    dismissedTags.add(e.data.tag);
+  }
 });
 
 /* ── Клик по уведомлению ── */
@@ -56,23 +30,171 @@ self.addEventListener("notificationclick", (e) => {
   e.notification.close();
 
   if (action === "snooze") {
-    self.clients.matchAll({ type: "window" }).then((cs) =>
-      cs.forEach((c) => c.postMessage({ type: "SNOOZED", tag }))
-    );
+    // отложить на 5 минут
+    const snoozeUntil = Date.now() + 5 * 60 * 1000;
+    snoozed[tag] = snoozeUntil;
+    broadcastSnooze(tag);
     return;
   }
-
   if (action === "dismiss") {
-    self.clients.matchAll({ type: "window" }).then((cs) =>
-      cs.forEach((c) => c.postMessage({ type: "DISMISSED", tag }))
-    );
+    dismissedTags.add(tag);
+    broadcastDismiss(tag);
     return;
   }
 
+  // открыть приложение
   e.waitUntil(
     self.clients.matchAll({ type: "window" }).then((clients) => {
-      for (const c of clients) { c.focus(); return; }
+      for (const c of clients) {
+        if (c.url.includes(self.location.origin)) {
+          c.focus();
+          return;
+        }
+      }
       self.clients.openWindow("/");
     })
   );
 });
+
+/* ── Состояние ── */
+const snoozed = {}; // tag -> timestamp until
+const dismissedTags = new Set();
+let checkTimer = null;
+
+function broadcastSnooze(tag) {
+  self.clients.matchAll().then((cs) => cs.forEach((c) => c.postMessage({ type: "SNOOZED", tag })));
+}
+function broadcastDismiss(tag) {
+  self.clients.matchAll().then((cs) => cs.forEach((c) => c.postMessage({ type: "DISMISSED", tag })));
+}
+
+function startChecking() {
+  if (checkTimer) return;
+  checkTimer = setInterval(checkNotifications, CHECK_INTERVAL * 1000);
+  checkNotifications();
+}
+
+function pad(n) { return String(n).padStart(2, "0"); }
+
+function getTodayIso() {
+  const now = new Date();
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+const ADVANCE_MINUTES = {
+  "За 15 мин": 15,
+  "За 1 час": 60,
+  "За 3 часа": 180,
+  "За 6 часов": 360,
+  "За 1 день": 1440,
+  "За 2 дня": 2880,
+};
+
+function getTaskFireTimes(task) {
+  if (task.done || !task.date || !task.time) return [];
+  const results = [];
+  const base = new Date(task.date + "T" + task.time + ":00");
+  if (isNaN(base.getTime())) return [];
+
+  results.push({
+    fireAt: base.getTime(),
+    tag: `task-${task.id}-exact`,
+    title: "Ежедневник",
+    body: `🔔 ${task.text}`,
+  });
+
+  const advMin = task.advance && task.advance !== "none" && task.advance !== "custom"
+    ? (ADVANCE_MINUTES[task.advance] ?? 0) : 0;
+  if (advMin > 0) {
+    results.push({
+      fireAt: base.getTime() - advMin * 60 * 1000,
+      tag: `task-${task.id}-advance`,
+      title: "Напоминание",
+      body: `⏰ ${advMin < 60 ? advMin + " мин" : advMin / 60 + " ч"} до: ${task.text}`,
+    });
+  }
+
+  if (task.advance === "custom" && task.advanceTime) {
+    const [ch, cm] = task.advanceTime.split(":").map(Number);
+    const custom = new Date(task.date + "T00:00:00");
+    custom.setHours(ch, cm, 0, 0);
+    results.push({
+      fireAt: custom.getTime(),
+      tag: `task-${task.id}-custom`,
+      title: "Напоминание",
+      body: `📌 ${task.text}`,
+    });
+  }
+
+  return results;
+}
+
+function getReminderFireTime(r) {
+  if (!r.active || !r.time) return null;
+  const [h, m] = r.time.split(":").map(Number);
+  const base = new Date();
+  base.setHours(h, m, 0, 0);
+  if (base.getTime() < Date.now()) base.setDate(base.getDate() + 1);
+  return {
+    fireAt: base.getTime(),
+    tag: `reminder-${r.id}-${getTodayIso()}`,
+    title: "Напоминание",
+    body: `🔔 ${r.title} · ${r.time}`,
+  };
+}
+
+async function checkNotifications() {
+  // Читаем данные через клиентов (postMessage)
+  const clients = await self.clients.matchAll({ type: "window" });
+  if (clients.length === 0) {
+    // нет открытых окон — читаем напрямую из IDB не можем, пропускаем
+    return;
+  }
+
+  // Запрашиваем данные у страницы
+  const client = clients[0];
+  const msgChannel = new MessageChannel();
+
+  const data = await new Promise((resolve) => {
+    msgChannel.port1.onmessage = (e) => resolve(e.data);
+    client.postMessage({ type: "GET_DATA" }, [msgChannel.port2]);
+    setTimeout(() => resolve(null), 2000);
+  });
+
+  if (!data) return;
+
+  const { tasks = [], reminders = [], notificationsEnabled = true } = data;
+  if (!notificationsEnabled) return;
+
+  const now = Date.now();
+  const WINDOW = 90_000; // 90 сек окно срабатывания
+
+  const fire = async (item) => {
+    const { fireAt, tag, title, body } = item;
+    if (dismissedTags.has(tag)) return;
+    if (snoozed[tag] && Date.now() < snoozed[tag]) return;
+    if (fireAt > now || now - fireAt > WINDOW) return;
+
+    // Показываем уведомление
+    await self.registration.showNotification(title, {
+      body,
+      tag,
+      icon: "/favicon.svg",
+      badge: "/favicon.svg",
+      vibrate: [300, 100, 300, 100, 300],
+      requireInteraction: true,
+      actions: [
+        { action: "snooze", title: "⏱ Отложить 5 мин" },
+        { action: "dismiss", title: "✓ Выключить" },
+      ],
+    });
+  };
+
+  for (const task of tasks) {
+    for (const ft of getTaskFireTimes(task)) await fire(ft);
+  }
+  for (const r of reminders) {
+    const ft = getReminderFireTime(r);
+    if (ft) await fire(ft);
+  }
+}

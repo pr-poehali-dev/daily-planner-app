@@ -1,45 +1,60 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Icon from "@/components/ui/icon";
 import ReminderModal, { type NewReminder } from "@/components/ReminderModal";
 import SwipeRow from "@/components/SwipeRow";
-import { api, type Reminder } from "@/hooks/useApi";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+
+interface Reminder {
+  id: number;
+  title: string;
+  time: string;
+  date: string;
+  repeat: string;
+  active: boolean;
+  icon: string;
+  advance: string;
+}
 
 const advanceLabel: Record<string, string> = {
-  none: "", "1h": "за 1 час", "3h": "за 3 часа",
-  "6h": "за 6 часов", "1d": "за 1 день", "2d": "за 2 дня",
+  none: "",
+  "1h": "за 1 час",
+  "3h": "за 3 часа",
+  "6h": "за 6 часов",
+  "1d": "за 1 день",
+  "2d": "за 2 дня",
 };
 
+const initialReminders: Reminder[] = [
+  { id: 1, title: "Утренняя зарядка", time: "07:30", date: "Каждый день", repeat: "daily", active: true, icon: "Sun", advance: "none" },
+  { id: 2, title: "Обед", time: "13:00", date: "По будням", repeat: "weekdays", active: true, icon: "Coffee", advance: "none" },
+  { id: 3, title: "Встреча с командой", time: "15:00", date: "Сегодня, 17 апр", repeat: "once", active: true, icon: "Users", advance: "1h" },
+  { id: 4, title: "Вечерняя прогулка", time: "19:00", date: "Каждый день", repeat: "daily", active: false, icon: "Moon", advance: "none" },
+  { id: 5, title: "Планирование недели", time: "09:00", date: "По понедельникам", repeat: "weekly", active: true, icon: "LayoutList", advance: "1d" },
+];
+
 const RemindersPage = () => {
-  const [reminders, setReminders] = useState<Reminder[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [reminders, setReminders] = useLocalStorage("diary_reminders", initialReminders);
   const [modalOpen, setModalOpen] = useState(false);
 
-  useEffect(() => {
-    api.getReminders()
-      .then(setReminders)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
-
-  const toggleActive = async (id: number) => {
-    const r = reminders.find((r) => r.id === id);
-    if (!r) return;
-    const updated = { ...r, active: !r.active };
-    setReminders((prev) => prev.map((rem) => rem.id === id ? updated : rem));
-    await api.updateReminder(id, { active: updated.active }).catch(() => {});
+  const toggleActive = (id: number) => {
+    setReminders((prev) => prev.map((r) => r.id === id ? { ...r, active: !r.active } : r));
   };
 
-  const remove = async (id: number) => {
+  const remove = (id: number) => {
     setReminders((prev) => prev.filter((r) => r.id !== id));
-    await api.deleteReminder(id).catch(() => {});
   };
 
-  const addReminder = async (r: NewReminder) => {
-    const created = await api.createReminder({
-      title: r.title, time: r.time, date: r.date,
-      repeat: r.repeat, active: true, icon: r.icon, advance: r.advance,
-    }).catch(() => null);
-    if (created) setReminders((prev) => [...prev, created]);
+  const addReminder = (r: NewReminder) => {
+    setReminders((prev) => [...prev, {
+      id: Date.now(),
+      title: r.title,
+      time: r.time,
+      date: r.date,
+      repeat: r.repeat,
+      active: true,
+      icon: r.icon,
+      advance: r.advance,
+    }]);
   };
 
   const activeCount = reminders.filter((r) => r.active).length;
@@ -55,54 +70,54 @@ const RemindersPage = () => {
 
       <p className="page-sub">{activeCount} активных напоминаний</p>
 
-      {loading ? (
-        <div className="empty-state"><span className="auth-spinner auth-spinner--lg" /></div>
-      ) : (
-        <div className="reminder-list">
-          {reminders.map((r) => (
-            <SwipeRow
-              key={r.id}
-              onDelete={() => remove(r.id)}
-              className={`reminder-card ${!r.active ? "reminder-card--inactive" : ""}`}
-            >
-              <div className="reminder-icon-wrap">
-                <Icon name={r.icon} size={18} />
-              </div>
-              <div className="reminder-info">
-                <span className="reminder-title">{r.title}</span>
-                <div className="reminder-meta">
-                  <Icon name="Clock" size={12} />
-                  <span>{r.time}</span>
-                  {r.date && <><span className="reminder-sep">·</span><span>{r.date}</span></>}
-                  {r.advance && r.advance !== "none" && (
-                    <><span className="reminder-sep">·</span>
+      <div className="reminder-list">
+        {reminders.map((r) => (
+          <SwipeRow
+            key={r.id}
+            onDelete={() => remove(r.id)}
+            className={`reminder-card ${!r.active ? "reminder-card--inactive" : ""}`}
+          >
+            <div className="reminder-icon-wrap">
+              <Icon name={r.icon} size={18} />
+            </div>
+            <div className="reminder-info">
+              <span className="reminder-title">{r.title}</span>
+              <div className="reminder-meta">
+                <Icon name="Clock" size={12} />
+                <span>{r.time}</span>
+                <span className="reminder-sep">·</span>
+                <span>{r.date}</span>
+                {r.advance && r.advance !== "none" && (
+                  <>
+                    <span className="reminder-sep">·</span>
                     <span className="reminder-advance">
                       <Icon name="BellDot" size={11} />
-                      {advanceLabel[r.advance] || r.advance}
-                    </span></>
-                  )}
-                </div>
+                      {advanceLabel[r.advance]}
+                    </span>
+                  </>
+                )}
               </div>
-              <button
-                className={`toggle-switch ${r.active ? "toggle-switch--on" : ""}`}
-                onClick={(e) => { e.stopPropagation(); toggleActive(r.id); }}
-              >
-                <span className="toggle-knob" />
-              </button>
-            </SwipeRow>
-          ))}
-          {reminders.length === 0 && (
-            <div className="empty-state"><Icon name="Bell" size={32} /><p>Напоминаний нет</p></div>
-          )}
-        </div>
-      )}
+            </div>
+            <button
+              className={`toggle-switch ${r.active ? "toggle-switch--on" : ""}`}
+              onClick={(e) => { e.stopPropagation(); toggleActive(r.id); }}
+            >
+              <span className="toggle-knob" />
+            </button>
+          </SwipeRow>
+        ))}
+      </div>
 
       <button className="add-reminder-btn" onClick={() => setModalOpen(true)}>
         <Icon name="Plus" size={16} />
         Добавить напоминание
       </button>
 
-      <ReminderModal open={modalOpen} onClose={() => setModalOpen(false)} onSave={addReminder} />
+      <ReminderModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSave={addReminder}
+      />
     </div>
   );
 };
