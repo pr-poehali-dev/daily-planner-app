@@ -94,7 +94,7 @@ ADVANCE_MINUTES = {
 def get_conn():
     return psycopg2.connect(os.environ["DATABASE_URL"])
 
-def get_fire_times(task_id, text, date, time_val, advance, advance_time, tz_offset_min=0):
+def get_fire_times(task_id, text, date, time_val, advance, advance_time, tz_offset_min=0, melody="classic"):
     if not date or not time_val:
         return []
     results = []
@@ -109,6 +109,7 @@ def get_fire_times(task_id, text, date, time_val, advance, advance_time, tz_offs
         "tag": f"task-{task_id}-exact",
         "title": "Ежедневник",
         "body": f"🔔 {text}",
+        "melody": melody,
     })
 
     adv = advance or "none"
@@ -119,6 +120,7 @@ def get_fire_times(task_id, text, date, time_val, advance, advance_time, tz_offs
             "tag": f"task-{task_id}-advance",
             "title": "Напоминание",
             "body": f"⏰ {'%d мин' % adv_min if adv_min < 60 else '%d ч' % (adv_min // 60)} до: {text}",
+            "melody": melody,
         })
 
     if adv == "custom" and advance_time:
@@ -130,6 +132,7 @@ def get_fire_times(task_id, text, date, time_val, advance, advance_time, tz_offs
                 "tag": f"task-{task_id}-custom",
                 "title": "Напоминание",
                 "body": f"📌 {text}",
+                "melody": melody,
             })
         except Exception:
             pass
@@ -157,13 +160,12 @@ def get_reminder_fire(reminder_id, title, time_val, tz_offset_min=0):
     except Exception:
         return None
 
-def send_push(subscription: dict, title: str, body: str, tag: str):
+def send_push(subscription: dict, title: str, body: str, tag: str, melody: str = "classic"):
     sub_clean = {k: v for k, v in subscription.items() if k != "tz_offset_min"}
-    # Приоритет: raw base64url → PKCS8 → оригинал
     key_to_use = VAPID_PRIVATE_RAW or VAPID_PRIVATE_PKCS8 or VAPID_PRIVATE
     webpush(
         subscription_info=sub_clean,
-        data=json.dumps({"title": title, "body": body, "tag": tag}),
+        data=json.dumps({"title": title, "body": body, "tag": tag, "melody": melody}),
         vapid_private_key=key_to_use,
         vapid_claims=VAPID_CLAIMS,
     )
@@ -191,24 +193,24 @@ def handler(event: dict, context) -> dict:
     subscriptions = cur.fetchall()
 
     now = datetime.utcnow()
-    # Окно 15 минут — с большим запасом перекрывает паузы между вызовами cron
+    # Окно 3 минуты — задержка max 3 мин между срабатыванием и получением уведомления
     # Дедупликация через push_fired не даёт отправить одно и то же уведомление дважды
-    window = timedelta(minutes=15)
+    window = timedelta(minutes=3)
     sent = 0
     errors = 0
-    print(f"[push] tick {now.isoformat()}Z subs={len(subscriptions)} window=6min")
+    print(f"[push] tick {now.isoformat()}Z subs={len(subscriptions)} window=3min")
 
     for (user_key, subscription, user_id, tz_offset) in subscriptions:
         all_items = []
 
         cur.execute(f"""
-            SELECT id, text, date, time, advance, advance_time
+            SELECT id, text, date, time, advance, advance_time, COALESCE(melody, 'classic')
             FROM {SCHEMA}.tasks
             WHERE user_id = %s AND done = false
               AND time IS NOT NULL AND time != ''
         """, (user_id,))
-        for (tid, text, date, time_val, advance, adv_time) in cur.fetchall():
-            all_items.extend(get_fire_times(tid, text, date, time_val, advance, adv_time or "", tz_offset))
+        for (tid, text, date, time_val, advance, adv_time, melody) in cur.fetchall():
+            all_items.extend(get_fire_times(tid, text, date, time_val, advance, adv_time or "", tz_offset, melody or "classic"))
 
         cur.execute(f"""
             SELECT id, title, time FROM {SCHEMA}.reminders
@@ -222,7 +224,7 @@ def handler(event: dict, context) -> dict:
         print(f"[push] user_id={user_id} items={len(all_items)}")
 
         for item in all_items:
-            # Срабатывание если время уже наступило и не позже чем 6 минут назад
+            # Срабатывание если время уже наступило и не позже чем 3 минуты назад
             if not (item["fire_at"] <= now <= item["fire_at"] + window):
                 continue
 
@@ -235,7 +237,7 @@ def handler(event: dict, context) -> dict:
 
             print(f"[push] firing {item['tag']}")
             try:
-                send_push(subscription, item["title"], item["body"], item["tag"])
+                send_push(subscription, item["title"], item["body"], item["tag"], item.get("melody", "classic"))
                 cur.execute(
                     f"INSERT INTO {SCHEMA}.push_fired (user_key, tag) VALUES (%s, %s) ON CONFLICT DO NOTHING",
                     (user_key, item["tag"])

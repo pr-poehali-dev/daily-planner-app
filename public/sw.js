@@ -15,9 +15,9 @@ function startCron() {
   if (cronTimer) return;
   setTimeout(() => {
     pingScheduler();
-    // Каждые 45 секунд — чаще чем платформенный cron, чтобы ловить точное время задач
-    cronTimer = setInterval(pingScheduler, 45_000);
-  }, 3000);
+    // Каждые 30 секунд — чтобы гарантировать задержку ≤2 мин от срабатывания
+    cronTimer = setInterval(pingScheduler, 30_000);
+  }, 2000);
 }
 
 function pingScheduler() {
@@ -49,9 +49,9 @@ self.addEventListener("push", (e) => {
       data,
     });
 
-    // Если вкладка открыта — просим сыграть звук
+    // Если вкладка открыта — просим сыграть выбранную мелодию
     const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-    clients.forEach((c) => c.postMessage({ type: "PLAY_ALARM", tag: data.tag }));
+    clients.forEach((c) => c.postMessage({ type: "PLAY_ALARM", tag: data.tag, melody: data.melody || "classic" }));
   })());
 });
 

@@ -1,0 +1,1 @@
+ALTER TABLE t_p85754813_daily_planner_app.tasks ADD COLUMN IF NOT EXISTS melody TEXT DEFAULT 'classic';

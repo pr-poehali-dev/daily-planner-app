@@ -2487,6 +2487,16 @@
   color: hsl(var(--primary-foreground));
 }
 
+.melody-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.melody-chip:active {
+  transform: scale(0.95);
+}
+
 .icon-picker {
   display: flex;
   gap: 8px;
