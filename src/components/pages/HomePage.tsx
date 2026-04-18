@@ -118,22 +118,6 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
         <div className="avatar-circle">{getInitials(profile.name)}</div>
       </div>
 
-      {/* Progress */}
-      <div className="progress-card">
-        <div className="progress-header">
-          <span className="progress-label">Прогресс дня</span>
-          <span className="progress-pct">{progress}%</span>
-        </div>
-        <div className="progress-track">
-          <div className="progress-fill" style={{ width: `${progress}%` }} />
-        </div>
-        <p className="progress-sub">
-          {todayTasks.length === 0
-            ? "Задач на сегодня нет"
-            : `${doneCount} из ${todayTasks.length} задач выполнено`}
-        </p>
-      </div>
-
       {/* Quick Stats */}
       <div className="stats-grid">
         <button className="stat-card" onClick={() => onNavigate?.("tasks")}>
