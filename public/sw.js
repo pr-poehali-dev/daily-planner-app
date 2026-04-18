@@ -1,6 +1,6 @@
 /* ── Service Worker — Ежедневник ── */
 
-const SCHEDULER_URL = "https://functions.poehali.dev/f10f6f28-103a-4d40-971a-14fa18ae6672";
+const CRON_URL = "https://functions.poehali.dev/b9e8fd82-350a-4c3b-b8d0-1a214e46f2f4";
 let cronTimer = null;
 
 self.addEventListener("install", () => self.skipWaiting());
@@ -10,24 +10,18 @@ self.addEventListener("activate", (e) => {
   startCron();
 });
 
-/* ── Фоновый пинг прямо в SW: работает пока браузер запущен (вкладка закрыта — ок) ── */
+/* ── Фоновый cron прямо в SW: работает пока браузер запущен (вкладка закрыта — ок) ── */
 function startCron() {
   if (cronTimer) return;
   setTimeout(() => {
     pingScheduler();
-    // Каждые 30 секунд — чтобы гарантировать задержку ≤2 мин от срабатывания
-    cronTimer = setInterval(pingScheduler, 30_000);
-  }, 2000);
+    cronTimer = setInterval(pingScheduler, 60_000);
+  }, 3000);
 }
 
 function pingScheduler() {
-  fetch(SCHEDULER_URL, { method: "GET", cache: "no-store" }).catch(() => {});
+  fetch(CRON_URL, { method: "GET" }).catch(() => {});
 }
-
-/* ── По сообщению от клиента (изменилась задача) — сразу пинг ── */
-self.addEventListener("message", (e) => {
-  if (e.data?.type === "PING_SCHEDULER") pingScheduler();
-});
 
 /* ── Получаем push с сервера (браузер полностью закрыт — ОС будит SW) ── */
 self.addEventListener("push", (e) => {
@@ -49,9 +43,9 @@ self.addEventListener("push", (e) => {
       data,
     });
 
-    // Если вкладка открыта — просим сыграть выбранную мелодию
+    // Если вкладка открыта — просим сыграть звук
     const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-    clients.forEach((c) => c.postMessage({ type: "PLAY_ALARM", tag: data.tag, melody: data.melody || "classic" }));
+    clients.forEach((c) => c.postMessage({ type: "PLAY_ALARM", tag: data.tag }));
   })());
 });
 

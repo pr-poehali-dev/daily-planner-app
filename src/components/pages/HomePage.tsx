@@ -62,7 +62,6 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
       time: newTask.time,
       advance: newTask.advance,
       advanceTime: newTask.advanceTime,
-      melody: newTask.melody,
     }).catch(() => null);
     if (created) setTasks((prev) => [...prev, created]);
   };

@@ -38,8 +38,7 @@ def get_user_id(conn, token: str):
 def task_row(r):
     return {"id": r[0], "text": r[1], "done": r[2], "priority": r[3],
             "category": r[4], "date": r[5], "time": r[6] or "",
-            "advance": r[7] or "none", "advanceTime": r[8] or "",
-            "melody": r[9] if len(r) > 9 else "classic"}
+            "advance": r[7] or "none", "advanceTime": r[8] or ""}
 
 def reminder_row(r):
     return {"id": r[0], "title": r[1], "time": r[2], "date": r[3] or "",
@@ -142,7 +141,7 @@ def handler(event: dict, context) -> dict:
 
         if method == "GET":
             cur.execute(
-                f"SELECT id, text, done, priority, category, date, time, advance, advance_time, COALESCE(melody, 'classic') FROM {SCHEMA}.tasks WHERE user_id = %s ORDER BY sort_order, created_at",
+                f"SELECT id, text, done, priority, category, date, time, advance, advance_time FROM {SCHEMA}.tasks WHERE user_id = %s ORDER BY sort_order, created_at",
                 (uid,)
             )
             tasks = [task_row(r) for r in cur.fetchall()]
@@ -153,10 +152,10 @@ def handler(event: dict, context) -> dict:
             if not text:
                 cur.close(); conn.close(); return err(400, "Текст обязателен")
             cur.execute(
-                f"INSERT INTO {SCHEMA}.tasks (user_id, text, priority, category, date, time, advance, advance_time, melody, sort_order) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,(SELECT COALESCE(MAX(sort_order),0)+1 FROM {SCHEMA}.tasks WHERE user_id=%s)) RETURNING id, text, done, priority, category, date, time, advance, advance_time, COALESCE(melody, 'classic')",
+                f"INSERT INTO {SCHEMA}.tasks (user_id, text, priority, category, date, time, advance, advance_time, sort_order) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,(SELECT COALESCE(MAX(sort_order),0)+1 FROM {SCHEMA}.tasks WHERE user_id=%s)) RETURNING id, text, done, priority, category, date, time, advance, advance_time",
                 (uid, text, body.get("priority","medium"), body.get("category","Общее"),
                  body.get("date",""), body.get("time",""), body.get("advance","none"),
-                 body.get("advanceTime",""), body.get("melody","classic"), uid)
+                 body.get("advanceTime",""), uid)
             )
             t = task_row(cur.fetchone()); conn.commit(); cur.close(); conn.close(); return ok(t)
 
@@ -164,14 +163,13 @@ def handler(event: dict, context) -> dict:
             tid = parts[-1]
             fields, vals = [], []
             for f, col in [("text","text"),("done","done"),("priority","priority"),("category","category"),
-                           ("date","date"),("time","time"),("advance","advance"),("advanceTime","advance_time"),
-                           ("melody","melody")]:
+                           ("date","date"),("time","time"),("advance","advance"),("advanceTime","advance_time")]:
                 if f in body:
                     fields.append(f"{col} = %s"); vals.append(body[f])
             if not fields:
                 cur.close(); conn.close(); return err(400, "Нет полей")
             vals += [tid, uid]
-            cur.execute(f"UPDATE {SCHEMA}.tasks SET {', '.join(fields)} WHERE id = %s AND user_id = %s RETURNING id, text, done, priority, category, date, time, advance, advance_time, COALESCE(melody, 'classic')", vals)
+            cur.execute(f"UPDATE {SCHEMA}.tasks SET {', '.join(fields)} WHERE id = %s AND user_id = %s RETURNING id, text, done, priority, category, date, time, advance, advance_time", vals)
             row = cur.fetchone(); conn.commit(); cur.close(); conn.close()
             return ok(task_row(row)) if row else err(404, "Не найдено")
 
