@@ -392,6 +392,29 @@
   color: hsl(var(--foreground));
 }
 
+.home-task-expand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+  padding: 6px 10px;
+  background: hsl(var(--muted));
+  border: none;
+  border-top: 1px solid hsl(var(--border));
+  color: hsl(var(--muted-foreground));
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: "Golos Text", sans-serif;
+  transition: all 0.15s;
+}
+
+.home-task-expand:hover {
+  background: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
 /* ========================
    SECTIONS
 ======================== */

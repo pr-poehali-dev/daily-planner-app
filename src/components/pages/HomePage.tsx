@@ -48,6 +48,7 @@ const HomePage = () => {
   const [tasks, setTasks] = useLocalStorage<Task[]>("diary_tasks", initialTasks);
   const [reminders] = useLocalStorage<Reminder[]>("diary_reminders", []);
   const [modalOpen, setModalOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [profile] = useLocalStorage<{ name: string }>("diary_profile", { name: "Алексей" });
 
   const todayIso = getTodayIso();
@@ -142,34 +143,55 @@ const HomePage = () => {
               <span>Добавить первую задачу на сегодня</span>
             </div>
           ) : (
-            todayTasks.map((task) => (
-              <div
-                key={task.id}
-                className={`home-task-row ${task.done ? "home-task-row--done" : ""}`}
-                onClick={() => toggle(task.id)}
-              >
-                <span
-                  className="home-task-priority"
-                  style={{ background: priorityColors[task.priority] }}
-                />
-                <div className={`home-task-check ${task.done ? "home-task-check--done" : ""}`}>
-                  {task.done && <Icon name="Check" size={10} />}
+            <>
+              {(expanded ? todayTasks : todayTasks.slice(0, 1)).map((task) => (
+                <div
+                  key={task.id}
+                  className={`home-task-row ${task.done ? "home-task-row--done" : ""}`}
+                  onClick={() => toggle(task.id)}
+                >
+                  <span
+                    className="home-task-priority"
+                    style={{ background: priorityColors[task.priority] }}
+                  />
+                  <div className={`home-task-check ${task.done ? "home-task-check--done" : ""}`}>
+                    {task.done && <Icon name="Check" size={10} />}
+                  </div>
+                  <span className="home-task-text">{task.text}</span>
+                  {task.time && (
+                    <span className="home-task-time">
+                      <Icon name="Clock" size={10} />
+                      {task.time}
+                    </span>
+                  )}
                 </div>
-                <span className="home-task-text">{task.text}</span>
-                {task.time && (
-                  <span className="home-task-time">
-                    <Icon name="Clock" size={10} />
-                    {task.time}
-                  </span>
-                )}
-              </div>
-            ))
-          )}
-          {todayTasks.length > 0 && (
-            <button className="home-task-add" onClick={() => setModalOpen(true)}>
-              <Icon name="Plus" size={13} />
-              Добавить
-            </button>
+              ))}
+
+              {/* Кнопка раскрытия если задач больше одной */}
+              {todayTasks.length > 1 && (
+                <button
+                  className="home-task-expand"
+                  onClick={() => setExpanded((e) => !e)}
+                >
+                  {expanded ? (
+                    <>
+                      <Icon name="ChevronUp" size={13} />
+                      Свернуть
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="ChevronDown" size={13} />
+                      Ещё {todayTasks.length - 1} {todayTasks.length - 1 === 1 ? "задача" : todayTasks.length - 1 < 5 ? "задачи" : "задач"}
+                    </>
+                  )}
+                </button>
+              )}
+
+              <button className="home-task-add" onClick={() => setModalOpen(true)}>
+                <Icon name="Plus" size={13} />
+                Добавить
+              </button>
+            </>
           )}
         </div>
       </div>
