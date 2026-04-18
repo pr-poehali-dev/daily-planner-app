@@ -2022,7 +2022,7 @@
   border-radius: 24px 24px 0 0;
   padding: 12px 20px 36px;
   animation: sheet-in 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
-  max-height: 90dvh;
+  max-height: 75dvh;
   overflow-y: auto;
 }
 
