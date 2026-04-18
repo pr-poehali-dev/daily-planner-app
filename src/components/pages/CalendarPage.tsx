@@ -209,6 +209,15 @@ const CalendarPage = () => {
               {/* Expanded week: task list by day — все задачи раскрыты */}
               {isExpanded && (
                 <div className="cal-week-detail">
+                  <div className="cal-week-detail-header">
+                    <button
+                      className="cal-week-collapse-btn"
+                      onClick={() => toggleWeek(wi)}
+                    >
+                      <Icon name="ChevronUp" size={13} />
+                      Свернуть
+                    </button>
+                  </div>
                   {week.map((day, di) => {
                     if (!day) return null;
                     const iso = toIso(year, month, day);
