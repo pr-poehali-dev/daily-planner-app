@@ -135,49 +135,43 @@ const HomePage = () => {
           </button>
         </div>
 
-        <div className="task-list">
+        <div className="home-task-list">
           {todayTasks.length === 0 ? (
             <div className="home-empty" onClick={() => setModalOpen(true)}>
-              <Icon name="Plus" size={22} />
+              <Icon name="Plus" size={20} />
               <span>Добавить первую задачу на сегодня</span>
             </div>
           ) : (
             todayTasks.map((task) => (
               <div
                 key={task.id}
-                className={`task-row ${task.done ? "task-row--done" : ""}`}
+                className={`home-task-row ${task.done ? "home-task-row--done" : ""}`}
                 onClick={() => toggle(task.id)}
               >
-                <div className={`task-check ${task.done ? "task-check--done" : ""}`}>
-                  {task.done && <Icon name="Check" size={12} />}
+                <span
+                  className="home-task-priority"
+                  style={{ background: priorityColors[task.priority] }}
+                />
+                <div className={`home-task-check ${task.done ? "home-task-check--done" : ""}`}>
+                  {task.done && <Icon name="Check" size={10} />}
                 </div>
-                <div className="task-info">
-                  <span className="task-text">{task.text}</span>
-                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    <span
-                      className="cal-task-dot"
-                      style={{ background: priorityColors[task.priority], width: 6, height: 6 }}
-                    />
-                    <span className="task-category">{task.category}</span>
-                    {task.time && (
-                      <span className="task-time-badge">
-                        <Icon name="Clock" size={10} />
-                        {task.time}
-                      </span>
-                    )}
-                  </div>
-                </div>
+                <span className="home-task-text">{task.text}</span>
+                {task.time && (
+                  <span className="home-task-time">
+                    <Icon name="Clock" size={10} />
+                    {task.time}
+                  </span>
+                )}
               </div>
             ))
           )}
+          {todayTasks.length > 0 && (
+            <button className="home-task-add" onClick={() => setModalOpen(true)}>
+              <Icon name="Plus" size={13} />
+              Добавить
+            </button>
+          )}
         </div>
-
-        {todayTasks.length > 0 && (
-          <button className="home-add-inline" onClick={() => setModalOpen(true)}>
-            <Icon name="Plus" size={14} />
-            Добавить задачу
-          </button>
-        )}
       </div>
 
       <TaskModal
