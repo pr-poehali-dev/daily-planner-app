@@ -1,0 +1,6 @@
+{
+  "push-genkeys": "https://functions.poehali.dev/314445c2-18be-4861-8df9-411d21c5882f",
+  "push-scheduler": "https://functions.poehali.dev/f10f6f28-103a-4d40-971a-14fa18ae6672",
+  "push-subscribe": "https://functions.poehali.dev/54b522c7-94bc-4ba7-87f0-54081021a5da",
+  "push-sync": "https://functions.poehali.dev/4833118a-55ec-4b57-8daa-e244ba1e752d"
+}

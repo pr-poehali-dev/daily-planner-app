@@ -1,7 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import TaskModal, { type NewTask } from "@/components/TaskModal";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { syncTasksToServer } from "@/hooks/useTaskNotifications";
 
 type Priority = "high" | "medium" | "low";
 type Filter = "all" | "active" | "done";
@@ -54,6 +55,9 @@ const TasksPage = () => {
   const [dragId, setDragId] = useState<number | null>(null);
   const [dragOverId, setDragOverId] = useState<number | null>(null);
   const dragNode = useRef<HTMLDivElement | null>(null);
+
+  // Синхронизируем задачи на сервер при каждом изменении
+  useEffect(() => { syncTasksToServer(); }, [tasks]);
 
   const toggle = (id: number) => {
     setTasks((prev) => prev.map((t) => t.id === id ? { ...t, done: !t.done } : t));
