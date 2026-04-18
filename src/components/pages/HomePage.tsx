@@ -3,6 +3,11 @@ import Icon from "@/components/ui/icon";
 import TaskModal, { type NewTask } from "@/components/TaskModal";
 import { api, type Task, type Reminder } from "@/hooks/useApi";
 import { useAuth } from "@/hooks/useAuth";
+import type { Page } from "@/pages/Index";
+
+interface HomePageProps {
+  onNavigate?: (page: Page) => void;
+}
 
 const today = new Date();
 const dayNames = ["воскресенье", "понедельник", "вторник", "среда", "четверг", "пятница", "суббота"];
@@ -19,7 +24,7 @@ function getTodayIso() {
   return `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
 }
 
-const HomePage = () => {
+const HomePage = ({ onNavigate }: HomePageProps) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -92,21 +97,21 @@ const HomePage = () => {
 
       {/* Quick Stats */}
       <div className="stats-grid">
-        <div className="stat-card">
+        <button className="stat-card" onClick={() => onNavigate?.("tasks")}>
           <Icon name="CheckSquare" size={18} />
           <span className="stat-value">{todayTasks.length}</span>
           <span className="stat-label">Задач сегодня</span>
-        </div>
-        <div className="stat-card">
+        </button>
+        <button className="stat-card" onClick={() => onNavigate?.("tasks")}>
           <Icon name="CheckCircle" size={18} />
           <span className="stat-value">{doneCount}</span>
           <span className="stat-label">Выполнено</span>
-        </div>
-        <div className="stat-card">
+        </button>
+        <button className="stat-card" onClick={() => onNavigate?.("reminders")}>
           <Icon name="Bell" size={18} />
           <span className="stat-value">{activeReminders}</span>
           <span className="stat-label">Напоминаний</span>
-        </div>
+        </button>
       </div>
 
       {/* Tasks today */}

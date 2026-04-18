@@ -20,7 +20,7 @@ const Index = () => {
 
   const renderPage = () => {
     switch (activePage) {
-      case "home": return <HomePage />;
+      case "home": return <HomePage onNavigate={setActivePage} />;
       case "tasks": return <TasksPage />;
       case "calendar": return <CalendarPage />;
       case "reminders": return <RemindersPage />;

@@ -546,6 +546,18 @@
   align-items: center;
   gap: 4px;
   color: hsl(var(--foreground));
+  font-family: "Golos Text", sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.stat-card:hover {
+  background: hsl(var(--muted));
+  transform: translateY(-1px);
+}
+
+.stat-card:active {
+  transform: scale(0.97);
 }
 
 .stat-value {
