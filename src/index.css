@@ -2129,6 +2129,8 @@
   align-items: flex-end;
   justify-content: center;
   animation: overlay-in 0.2s ease forwards;
+  /* Когда открыта клавиатура — шторка не уезжает за экран */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 @keyframes overlay-in {
@@ -2147,8 +2149,10 @@
   border-radius: 24px 24px 0 0;
   padding: 12px 20px 36px;
   animation: sheet-in 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
-  max-height: 90dvh;
-  overflow-y: auto;
+  max-height: 92dvh;
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 @keyframes sheet-in {
