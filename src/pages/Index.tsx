@@ -5,6 +5,7 @@ import CalendarPage from "@/components/pages/CalendarPage";
 import RemindersPage from "@/components/pages/RemindersPage";
 import SettingsPage from "@/components/pages/SettingsPage";
 import BottomNav from "@/components/BottomNav";
+import InstallBanner from "@/components/InstallBanner";
 
 export type Page = "home" | "tasks" | "calendar" | "reminders" | "settings";
 
@@ -23,6 +24,7 @@ const Index = () => {
 
   return (
     <div className="app-shell">
+      <InstallBanner />
       <main className="main-content">
         {renderPage()}
       </main>

@@ -849,6 +849,93 @@
 }
 
 /* ========================
+   PWA INSTALL BANNER
+======================== */
+
+.install-banner {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: hsl(var(--foreground));
+  color: hsl(var(--primary-foreground));
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+}
+
+.install-banner-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.install-banner-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.install-banner-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.install-banner-sub {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.install-banner-btn {
+  padding: 7px 14px;
+  border-radius: 10px;
+  background: hsl(var(--primary-foreground));
+  color: hsl(var(--foreground));
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: "Golos Text", sans-serif;
+}
+
+.install-banner-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: hsl(var(--primary-foreground));
+  opacity: 0.6;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.settings-icon-wrap--accent {
+  background: hsl(var(--accent) / 0.15);
+  color: hsl(var(--accent));
+}
+
+.settings-icon-wrap--green {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+/* ========================
    ADVANCE NOTIFICATION (TaskModal)
 ======================== */
 

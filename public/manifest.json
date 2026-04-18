@@ -1,0 +1,20 @@
+{
+  "name": "Ежедневник",
+  "short_name": "Ежедневник",
+  "description": "Личный планировщик задач и напоминаний",
+  "theme_color": "#0f0f0f",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/",
+  "start_url": "/",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "https://cdn.poehali.dev/projects/cfc465bd-882d-426d-a87e-b5c7989d058a/files/c02f99a6-d7a7-4a75-bfa4-5ddaf8c1676d.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}

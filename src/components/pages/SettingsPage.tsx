@@ -2,6 +2,7 @@ import { useState } from "react";
 import Icon from "@/components/ui/icon";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import ProfileModal from "@/components/ProfileModal";
+import { usePWAInstall } from "@/hooks/usePWAInstall";
 
 interface SettingToggle {
   id: string;
@@ -32,6 +33,7 @@ const SettingsPage = () => {
   const [toggles, setToggles] = useLocalStorage("diary_settings", initialToggles);
   const [profile, setProfile] = useLocalStorage<Profile>("diary_profile", initialProfile);
   const [editOpen, setEditOpen] = useState(false);
+  const { canInstall, isInstalled, install } = usePWAInstall();
 
   const toggle = (id: string) => {
     setToggles((prev) => prev.map((t) => t.id === id ? { ...t, value: !t.value } : t));
@@ -78,6 +80,37 @@ const SettingsPage = () => {
           ))}
         </div>
       </div>
+
+      {/* Install */}
+      {(canInstall || isInstalled) && (
+        <div className="section">
+          <h2 className="section-title">Приложение</h2>
+          <div className="settings-list">
+            {isInstalled ? (
+              <div className="settings-row">
+                <div className="settings-icon-wrap settings-icon-wrap--green">
+                  <Icon name="CheckCircle" size={16} />
+                </div>
+                <div className="settings-info">
+                  <span className="settings-label">Приложение установлено</span>
+                  <span className="settings-desc">Работает как нативное приложение</span>
+                </div>
+              </div>
+            ) : (
+              <button className="settings-row settings-row--link" onClick={install}>
+                <div className="settings-icon-wrap settings-icon-wrap--accent">
+                  <Icon name="Download" size={16} />
+                </div>
+                <div className="settings-info">
+                  <span className="settings-label">Установить на устройство</span>
+                  <span className="settings-desc">Добавить на главный экран, работает офлайн</span>
+                </div>
+                <Icon name="ChevronRight" size={16} />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Links */}
       <div className="section">
