@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Icon from "@/components/ui/icon";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import TaskModal, { type NewTask } from "@/components/TaskModal";
@@ -65,6 +65,7 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
   const [expanded, setExpanded] = useState(false);
   const [previewTask, setPreviewTask] = useState<Task | null>(null);
   const [profile] = useLocalStorage<{ name: string }>("diary_profile", { name: "Алексей" });
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const todayIso = getTodayIso();
   const todayTasks = tasks.filter((t) => t.date === todayIso);
@@ -92,9 +93,18 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
     }
   };
 
+  const openModal = () => {
+    // Скроллим страницу вверх чтобы модалка открывалась от верха
+    containerRef.current?.closest(".main-content")?.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    setModalOpen(true);
+  };
+
   const openEdit = (id: number) => {
     setPreviewTask(null);
     setEditingId(id);
+    containerRef.current?.closest(".main-content")?.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "smooth" });
     setModalOpen(true);
   };
 
@@ -106,7 +116,7 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
   const editingTask = editingId !== null ? tasks.find((t) => t.id === editingId) : undefined;
 
   return (
-    <div className="page-container animate-fade-in">
+    <div className="page-container animate-fade-in" ref={containerRef}>
       {/* Header */}
       <div className="page-header">
         <div>
@@ -141,7 +151,7 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
       <div className="section">
         <div className="section-header">
           <h2 className="section-title">На сегодня</h2>
-          <button className="home-add-btn" onClick={() => setModalOpen(true)}>
+          <button className="home-add-btn" onClick={openModal}>
             <Icon name="Plus" size={15} />
             Добавить
           </button>
@@ -149,7 +159,7 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
 
         <div className="home-task-list">
           {todayTasks.length === 0 ? (
-            <div className="home-empty" onClick={() => setModalOpen(true)}>
+            <div className="home-empty" onClick={openModal}>
               <Icon name="Plus" size={20} />
               <span>Добавить первую задачу на сегодня</span>
             </div>
@@ -205,7 +215,7 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
             </button>
           )}
           {todayTasks.length > 0 && (
-            <button className="home-task-add" onClick={() => setModalOpen(true)}>
+            <button className="home-task-add" onClick={openModal}>
               <Icon name="Plus" size={13} />
               Добавить
             </button>
