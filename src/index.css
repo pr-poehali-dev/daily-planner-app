@@ -225,6 +225,71 @@
 }
 
 /* ========================
+   HOME PAGE
+======================== */
+
+.home-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: none;
+  background: hsl(var(--foreground));
+  color: hsl(var(--primary-foreground));
+  cursor: pointer;
+  font-family: "Golos Text", sans-serif;
+  transition: opacity 0.15s;
+}
+
+.home-add-btn:hover {
+  opacity: 0.85;
+}
+
+.home-add-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 11px 14px;
+  margin-top: 6px;
+  border-radius: 12px;
+  border: 1.5px dashed hsl(var(--border));
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: "Golos Text", sans-serif;
+  transition: all 0.15s;
+}
+
+.home-add-inline:hover {
+  border-color: hsl(var(--foreground));
+  color: hsl(var(--foreground));
+}
+
+.home-empty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 16px;
+  border-radius: 14px;
+  border: 2px dashed hsl(var(--border));
+  color: hsl(var(--muted-foreground));
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.home-empty:hover {
+  border-color: hsl(var(--foreground));
+  color: hsl(var(--foreground));
+}
+
+/* ========================
    SECTIONS
 ======================== */
 
