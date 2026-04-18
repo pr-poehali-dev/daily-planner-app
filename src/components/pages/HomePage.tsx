@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import TaskModal, { type NewTask } from "@/components/TaskModal";
@@ -64,8 +64,23 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [previewTask, setPreviewTask] = useState<Task | null>(null);
-  const [profile] = useLocalStorage<{ name: string }>("diary_profile", { name: "Алексей" });
+  const [profile, setProfile] = useLocalStorage<{ name: string }>("diary_profile", { name: "Алексей" });
   const containerRef = useRef<HTMLDivElement>(null);
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState("");
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editingName) {
+      setNameValue(profile.name);
+      setTimeout(() => nameInputRef.current?.focus(), 50);
+    }
+  }, [editingName, profile.name]);
+
+  const saveName = () => {
+    if (nameValue.trim()) setProfile({ name: nameValue.trim() });
+    setEditingName(false);
+  };
 
   const todayIso = getTodayIso();
   const todayTasks = tasks.filter((t) => t.date === todayIso);
@@ -121,11 +136,28 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
       <div className="page-header">
         <div>
           <p className="greeting-day">{dayNames[today.getDay()]}</p>
-          <h1 className="greeting-date">
-            {today.getDate()} {monthNames[today.getMonth()]}
-          </h1>
+          {editingName ? (
+            <div className="home-name-edit">
+              <input
+                ref={nameInputRef}
+                className="home-name-input"
+                value={nameValue}
+                onChange={(e) => setNameValue(e.target.value)}
+                onBlur={saveName}
+                onKeyDown={(e) => { if (e.key === "Enter") saveName(); if (e.key === "Escape") setEditingName(false); }}
+                placeholder="Введите имя"
+                maxLength={30}
+              />
+            </div>
+          ) : (
+            <h1 className="greeting-date" onClick={() => setEditingName(true)} style={{ cursor: "pointer" }}>
+              {profile.name} <Icon name="Pencil" size={14} />
+            </h1>
+          )}
         </div>
-        <div className="avatar-circle">{getInitials(profile.name)}</div>
+        <div className="avatar-circle" onClick={() => setEditingName(true)} style={{ cursor: "pointer" }}>
+          {getInitials(profile.name)}
+        </div>
       </div>
 
       {/* Quick Stats */}

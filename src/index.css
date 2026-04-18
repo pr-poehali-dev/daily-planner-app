@@ -2609,6 +2609,31 @@
 }
 
 /* ========================
+   HOME NAME EDIT
+======================== */
+
+.home-name-edit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.home-name-input {
+  font-size: 22px;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid hsl(var(--foreground));
+  outline: none;
+  font-family: "Golos Text", sans-serif;
+  width: 200px;
+  padding: 2px 0;
+  line-height: 1.2;
+}
+
+/* ========================
    CALENDAR EXTRAS
 ======================== */
 
