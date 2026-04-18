@@ -7,12 +7,15 @@ import SettingsPage from "@/components/pages/SettingsPage";
 import BottomNav from "@/components/BottomNav";
 import InstallBanner from "@/components/InstallBanner";
 import NotificationPermission from "@/components/NotificationPermission";
+import AuthScreen from "@/components/AuthScreen";
 import { useTaskNotifications } from "@/hooks/useTaskNotifications";
+import { useAuth } from "@/hooks/useAuth";
 
 export type Page = "home" | "tasks" | "calendar" | "reminders" | "settings";
 
 const Index = () => {
   const [activePage, setActivePage] = useState<Page>("home");
+  const { user, loading, login, register } = useAuth();
   useTaskNotifications();
 
   const renderPage = () => {
@@ -24,6 +27,18 @@ const Index = () => {
       case "settings": return <SettingsPage />;
     }
   };
+
+  if (loading) {
+    return (
+      <div className="auth-loading">
+        <span className="auth-spinner auth-spinner--lg" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthScreen onLogin={login} onRegister={register} />;
+  }
 
   return (
     <div className="app-shell">

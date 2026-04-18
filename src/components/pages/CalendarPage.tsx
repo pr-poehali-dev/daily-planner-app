@@ -1,22 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
 import TaskModal, { type NewTask } from "@/components/TaskModal";
+import { api, type Task } from "@/hooks/useApi";
 
 const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
 const dayLabels = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 const dayLabelsShort = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
-
-interface Task {
-  id: number;
-  text: string;
-  done: boolean;
-  priority: "high" | "medium" | "low";
-  category: string;
-  date: string;
-  advance?: string;
-  advanceTime?: string;
-}
 
 const priorityColors: Record<string, string> = {
   high: "#ef4444",
@@ -39,7 +28,7 @@ const CalendarPage = () => {
   const [month, setMonth] = useState(now.getMonth());
   const [selected, setSelected] = useState(now.getDate());
   const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(new Set());
-  const [tasks, setTasks] = useLocalStorage<Task[]>("diary_tasks", []);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalDate, setModalDate] = useState(toIso(now.getFullYear(), now.getMonth(), now.getDate()));
 
@@ -63,21 +52,29 @@ const CalendarPage = () => {
     setModalOpen(true);
   };
 
-  const addTask = (newTask: NewTask) => {
-    setTasks((prev) => [...prev, {
-      id: Date.now(),
+  useEffect(() => {
+    api.getTasks().then(setTasks).catch(() => {});
+  }, []);
+
+  const addTask = async (newTask: NewTask) => {
+    const created = await api.createTask({
       text: newTask.text,
-      done: false,
       priority: newTask.priority,
       category: newTask.category,
       date: modalDate,
+      time: newTask.time,
       advance: newTask.advance,
       advanceTime: newTask.advanceTime,
-    }]);
+    }).catch(() => null);
+    if (created) setTasks((prev) => [...prev, created]);
   };
 
-  const toggleTask = (id: number) => {
-    setTasks((prev) => prev.map((t) => t.id === id ? { ...t, done: !t.done } : t));
+  const toggleTask = async (id: number) => {
+    const t = tasks.find((t) => t.id === id);
+    if (!t) return;
+    const updated = { ...t, done: !t.done };
+    setTasks((prev) => prev.map((x) => x.id === id ? updated : x));
+    await api.updateTask(id, { done: updated.done }).catch(() => {});
   };
 
   const allCells: (number | null)[] = [

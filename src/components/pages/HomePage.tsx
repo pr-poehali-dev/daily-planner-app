@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
 import TaskModal, { type NewTask } from "@/components/TaskModal";
+import { api, type Task, type Reminder } from "@/hooks/useApi";
+import { useAuth } from "@/hooks/useAuth";
 
 const today = new Date();
 const dayNames = ["воскресенье", "понедельник", "вторник", "среда", "четверг", "пятница", "суббота"];
@@ -18,38 +19,17 @@ function getTodayIso() {
   return `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
 }
 
-interface Task {
-  id: number;
-  text: string;
-  done: boolean;
-  priority: "high" | "medium" | "low";
-  category: string;
-  date: string;
-  time?: string;
-  advance?: string;
-  advanceTime?: string;
-}
-
-interface Reminder {
-  id: number;
-  title: string;
-  time: string;
-  active: boolean;
-}
-
-const initialTasks: Task[] = [
-  { id: 1, text: "Подготовить отчёт за квартал", done: true, priority: "high", category: "Работа", date: getTodayIso() },
-  { id: 2, text: "Созвон с командой в 15:00", done: false, priority: "high", category: "Работа", date: getTodayIso() },
-  { id: 3, text: "Обновить базу контактов", done: false, priority: "medium", category: "Работа", date: getTodayIso() },
-  { id: 4, text: "Купить продукты", done: false, priority: "low", category: "Личное", date: getTodayIso() },
-];
-
 const HomePage = () => {
-  const [tasks, setTasks] = useLocalStorage<Task[]>("diary_tasks", initialTasks);
-  const [reminders] = useLocalStorage<Reminder[]>("diary_reminders", []);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [profile] = useLocalStorage<{ name: string }>("diary_profile", { name: "Алексей" });
+  const { user } = useAuth();
+
+  useEffect(() => {
+    api.getTasks().then(setTasks).catch(() => {});
+    api.getReminders().then(setReminders).catch(() => {});
+  }, []);
 
   const todayIso = getTodayIso();
   const todayTasks = tasks.filter((t) => t.date === todayIso);
@@ -60,22 +40,25 @@ const HomePage = () => {
   const getInitials = (name: string) =>
     name.trim().split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase() || "?";
 
-  const toggle = (id: number) => {
-    setTasks((prev) => prev.map((t) => t.id === id ? { ...t, done: !t.done } : t));
+  const toggle = async (id: number) => {
+    const t = tasks.find((t) => t.id === id);
+    if (!t) return;
+    const updated = { ...t, done: !t.done };
+    setTasks((prev) => prev.map((x) => x.id === id ? updated : x));
+    await api.updateTask(id, { done: updated.done }).catch(() => {});
   };
 
-  const addTask = (newTask: NewTask) => {
-    setTasks((prev) => [...prev, {
-      id: Date.now(),
+  const addTask = async (newTask: NewTask) => {
+    const created = await api.createTask({
       text: newTask.text,
-      done: false,
       priority: newTask.priority,
       category: newTask.category,
       date: newTask.date,
       time: newTask.time,
       advance: newTask.advance,
       advanceTime: newTask.advanceTime,
-    }]);
+    }).catch(() => null);
+    if (created) setTasks((prev) => [...prev, created]);
   };
 
   return (
@@ -88,7 +71,7 @@ const HomePage = () => {
             {today.getDate()} {monthNames[today.getMonth()]}
           </h1>
         </div>
-        <div className="avatar-circle">{getInitials(profile.name)}</div>
+        <div className="avatar-circle">{user ? getInitials(user.name || user.email) : "?"}</div>
       </div>
 
       {/* Progress */}

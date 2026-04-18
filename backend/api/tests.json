@@ -1,0 +1,9 @@
+{
+  "tests": [
+    {"name": "OPTIONS", "method": "OPTIONS", "path": "/", "expectedStatus": 200},
+    {"name": "Register missing fields", "method": "POST", "path": "/?route=register", "body": {}, "expectedStatus": 400},
+    {"name": "Login wrong", "method": "POST", "path": "/?route=login", "body": {"email": "x@x.com", "password": "wrong"}, "expectedStatus": 401},
+    {"name": "Me no token", "method": "GET", "path": "/?route=me", "expectedStatus": 401},
+    {"name": "Tasks no token", "method": "GET", "path": "/?route=tasks", "expectedStatus": 401}
+  ]
+}
