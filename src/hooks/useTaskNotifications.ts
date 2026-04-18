@@ -105,9 +105,12 @@ function getTaskFireTimes(task: Task) {
   const base = new Date(task.date + "T" + task.time + ":00");
   if (isNaN(base.getTime())) return [];
 
+  // Время включено в тег — при изменении времени задачи тег меняется и сигнал перепланируется
+  const timeKey = `${task.date}-${task.time}`;
+
   results.push({
     fireAt: base.getTime(),
-    tag: `task-${task.id}-exact`,
+    tag: `task-${task.id}-exact-${timeKey}`,
     title: "Ежедневник",
     body: `🔔 ${task.text}`,
   });
@@ -118,7 +121,7 @@ function getTaskFireTimes(task: Task) {
   if (advMin > 0) {
     results.push({
       fireAt: base.getTime() - advMin * 60 * 1000,
-      tag: `task-${task.id}-advance`,
+      tag: `task-${task.id}-advance-${timeKey}-${task.advance}`,
       title: "Напоминание",
       body: `⏰ ${advMin < 60 ? advMin + " мин" : advMin / 60 + " ч"} до: ${task.text}`,
     });
@@ -130,7 +133,7 @@ function getTaskFireTimes(task: Task) {
     custom.setHours(ch, cm, 0, 0);
     results.push({
       fireAt: custom.getTime(),
-      tag: `task-${task.id}-custom`,
+      tag: `task-${task.id}-custom-${task.date}-${task.advanceTime}`,
       title: "Напоминание",
       body: `📌 ${task.text}`,
     });
