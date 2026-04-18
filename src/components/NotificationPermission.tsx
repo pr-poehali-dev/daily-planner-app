@@ -24,13 +24,14 @@ async function doSubscribe() {
     }
     const userKey = localStorage.getItem("diary_user_key") ||
       (() => { const k = "u-" + Math.random().toString(36).slice(2); localStorage.setItem("diary_user_key", k); return k; })();
-    const tzOffsetMin = -new Date().getTimezoneOffset();
-    const token = localStorage.getItem("diary_token") || "";
+    const tasks = JSON.parse(localStorage.getItem("diary_tasks") || "[]");
+    const reminders = JSON.parse(localStorage.getItem("diary_reminders") || "[]");
+    const tzOffsetMin = -new Date().getTimezoneOffset(); // МСК = +180
     const subJson = { ...sub.toJSON(), tz_offset_min: tzOffsetMin };
     await fetch(SUBSCRIBE_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Authorization": `Bearer ${token}` },
-      body: JSON.stringify({ user_key: userKey, subscription: subJson }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_key: userKey, subscription: subJson, tasks, reminders }),
     });
     console.log("[Push] подписка отправлена на сервер");
   } catch (e) {

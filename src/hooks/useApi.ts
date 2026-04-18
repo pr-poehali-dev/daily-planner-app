@@ -15,12 +15,6 @@ function authHeaders() {
   };
 }
 
-const SCHEDULER_PING_URL = "https://functions.poehali.dev/f10f6f28-103a-4d40-971a-14fa18ae6672";
-
-function pingScheduler() {
-  fetch(SCHEDULER_PING_URL, { method: "GET", cache: "no-store" }).catch(() => {});
-}
-
 async function req<T>(method: string, route: string, body?: unknown): Promise<T> {
   const res = await fetch(url(route), {
     method,
@@ -29,10 +23,6 @@ async function req<T>(method: string, route: string, body?: unknown): Promise<T>
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Ошибка сервера");
-  // Если изменилась задача/напоминание — сразу пингуем scheduler
-  if (method !== "GET" && (route.includes("tasks") || route.includes("reminders"))) {
-    pingScheduler();
-  }
   return data as T;
 }
 
@@ -74,7 +64,6 @@ export interface Task {
   time: string;
   advance: string;
   advanceTime: string;
-  melody?: string;
 }
 
 export interface Reminder {

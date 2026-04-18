@@ -3,11 +3,6 @@ import Icon from "@/components/ui/icon";
 import TaskModal, { type NewTask } from "@/components/TaskModal";
 import { api, type Task, type Reminder } from "@/hooks/useApi";
 import { useAuth } from "@/hooks/useAuth";
-import type { Page } from "@/pages/Index";
-
-interface HomePageProps {
-  onNavigate?: (page: Page) => void;
-}
 
 const today = new Date();
 const dayNames = ["воскресенье", "понедельник", "вторник", "среда", "четверг", "пятница", "суббота"];
@@ -24,7 +19,7 @@ function getTodayIso() {
   return `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
 }
 
-const HomePage = ({ onNavigate }: HomePageProps) => {
+const HomePage = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -62,7 +57,6 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
       time: newTask.time,
       advance: newTask.advance,
       advanceTime: newTask.advanceTime,
-      melody: newTask.melody,
     }).catch(() => null);
     if (created) setTasks((prev) => [...prev, created]);
   };
@@ -98,21 +92,21 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
 
       {/* Quick Stats */}
       <div className="stats-grid">
-        <button className="stat-card" onClick={() => onNavigate?.("tasks")}>
+        <div className="stat-card">
           <Icon name="CheckSquare" size={18} />
           <span className="stat-value">{todayTasks.length}</span>
           <span className="stat-label">Задач сегодня</span>
-        </button>
-        <button className="stat-card" onClick={() => onNavigate?.("tasks")}>
+        </div>
+        <div className="stat-card">
           <Icon name="CheckCircle" size={18} />
           <span className="stat-value">{doneCount}</span>
           <span className="stat-label">Выполнено</span>
-        </button>
-        <button className="stat-card" onClick={() => onNavigate?.("reminders")}>
+        </div>
+        <div className="stat-card">
           <Icon name="Bell" size={18} />
           <span className="stat-value">{activeReminders}</span>
           <span className="stat-label">Напоминаний</span>
-        </button>
+        </div>
       </div>
 
       {/* Tasks today */}

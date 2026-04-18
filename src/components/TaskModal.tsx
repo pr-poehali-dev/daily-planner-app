@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
-import { MELODY_OPTIONS, playMelody, type MelodyId } from "@/utils/melodies";
 
 type Priority = "high" | "medium" | "low";
 
@@ -12,7 +11,6 @@ export interface NewTask {
   time: string;
   advance: string;
   advanceTime: string;
-  melody: MelodyId;
 }
 
 interface Props {
@@ -47,8 +45,6 @@ const TaskModal = ({ open, onClose, onSave, defaultDate }: Props) => {
   const [time, setTime] = useState("");
   const [advance, setAdvance] = useState("none");
   const [advanceTime, setAdvanceTime] = useState("");
-  const [melody, setMelody] = useState<MelodyId>("classic");
-  const sheetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -59,17 +55,12 @@ const TaskModal = ({ open, onClose, onSave, defaultDate }: Props) => {
       setTime("");
       setAdvance("none");
       setAdvanceTime("");
-      setMelody("classic");
-      // Скроллим к началу при каждом открытии
-      setTimeout(() => {
-        sheetRef.current?.scrollTo({ top: 0, behavior: "instant" });
-      }, 0);
     }
   }, [open, defaultDate]);
 
   const handleSave = () => {
     if (!text.trim()) return;
-    onSave({ text: text.trim(), priority, category, date, time, advance, advanceTime, melody });
+    onSave({ text: text.trim(), priority, category, date, time, advance, advanceTime });
     onClose();
   };
 
@@ -77,7 +68,7 @@ const TaskModal = ({ open, onClose, onSave, defaultDate }: Props) => {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-sheet" ref={sheetRef} onClick={(e) => e.stopPropagation()}>
+      <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="modal-handle" />
 
         <div className="modal-header">
@@ -96,6 +87,7 @@ const TaskModal = ({ open, onClose, onSave, defaultDate }: Props) => {
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={2}
+            autoFocus
           />
         </div>
 
@@ -188,33 +180,6 @@ const TaskModal = ({ open, onClose, onSave, defaultDate }: Props) => {
                 <span className="advance-custom-hint">Точное время напоминания в этот день</span>
               </div>
             )}
-          </div>
-        )}
-
-        {/* Выбор мелодии уведомления */}
-        {time && (
-          <div className="modal-field">
-            <label className="modal-label">
-              <Icon name="Music" size={13} />
-              Мелодия уведомления
-            </label>
-            <div className="chip-row chip-row--wrap">
-              {MELODY_OPTIONS.map((m) => (
-                <button
-                  key={m.id}
-                  className={`cat-chip melody-chip ${melody === m.id ? "cat-chip--active" : ""}`}
-                  onClick={() => {
-                    setMelody(m.id);
-                    playMelody(m.id, false);
-                  }}
-                  title="Нажми — прослушать"
-                >
-                  <Icon name={m.icon} size={12} />
-                  {m.label}
-                </button>
-              ))}
-            </div>
-            <span className="advance-custom-hint">Нажми на мелодию — прослушать</span>
           </div>
         )}
 

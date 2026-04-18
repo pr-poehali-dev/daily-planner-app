@@ -31,7 +31,6 @@ const CalendarPage = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalDate, setModalDate] = useState(toIso(now.getFullYear(), now.getMonth(), now.getDate()));
-  const [dayExpanded, setDayExpanded] = useState(false);
 
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
@@ -66,7 +65,6 @@ const CalendarPage = () => {
       time: newTask.time,
       advance: newTask.advance,
       advanceTime: newTask.advanceTime,
-      melody: newTask.melody,
     }).catch(() => null);
     if (created) setTasks((prev) => [...prev, created]);
   };
@@ -150,7 +148,7 @@ const CalendarPage = () => {
                       <button
                         key={di}
                         className={`cal-cell ${isSelected ? "cal-cell--selected" : ""} ${isToday && !isSelected ? "cal-cell--today" : ""}`}
-                        onClick={() => { setSelected(day); setDayExpanded(false); }}
+                        onClick={() => setSelected(day)}
                       >
                         {day}
                         {dayTasks.length > 0 && <span className="cal-dot" />}
@@ -236,40 +234,29 @@ const CalendarPage = () => {
             <span>Добавить задачу на этот день</span>
           </div>
         ) : (
-          <div className="compact-task-list">
-            {(dayExpanded ? selectedTasks : selectedTasks.slice(0, 1)).map((t) => (
+          <div className="event-list">
+            {selectedTasks.map((t) => (
               <div
                 key={t.id}
-                className={`compact-task-row ${t.done ? "compact-task-row--done" : ""}`}
+                className={`cal-event-row ${t.done ? "cal-event-row--done" : ""}`}
                 onClick={() => toggleTask(t.id)}
               >
-                <span className="compact-priority-bar" style={{ background: priorityColors[t.priority] }} />
-                <div className={`compact-check ${t.done ? "compact-check--done" : ""}`}>
-                  {t.done && <Icon name="Check" size={10} />}
-                </div>
-                <div className="compact-task-info">
-                  <span className="compact-task-text">{t.text}</span>
-                  <span className="compact-meta-item">{t.category}</span>
+                <div className="cal-event-bar" style={{ background: priorityColors[t.priority] }} />
+                <div className="cal-event-info">
+                  <span className="cal-event-title">{t.text}</span>
+                  <span className="cal-event-cat">{t.category}</span>
                 </div>
                 <div className={`cal-event-check ${t.done ? "cal-event-check--done" : ""}`}>
                   {t.done && <Icon name="Check" size={11} />}
                 </div>
               </div>
             ))}
-
-            {selectedTasks.length > 1 && (
-              <button className="compact-expand-btn" onClick={() => setDayExpanded(e => !e)}>
-                {dayExpanded ? (
-                  <><Icon name="ChevronUp" size={13} />Свернуть</>
-                ) : (
-                  <><Icon name="ChevronDown" size={13} />Ещё {selectedTasks.length - 1} {selectedTasks.length - 1 === 1 ? "задача" : selectedTasks.length - 1 < 5 ? "задачи" : "задач"}</>
-                )}
-              </button>
-            )}
-
-            <button className="compact-add-btn" onClick={() => openAddForDate(selectedIso)}>
-              <Icon name="Plus" size={13} />
-              Добавить
+            <button
+              className="cal-add-inline-btn"
+              onClick={() => openAddForDate(selectedIso)}
+            >
+              <Icon name="Plus" size={14} />
+              Добавить задачу
             </button>
           </div>
         )}

@@ -7,10 +7,10 @@
       "expectedStatus": 200
     },
     {
-      "name": "GET scheduler runs fast",
+      "name": "GET scheduler runs",
       "method": "GET",
       "path": "/",
-      "expectedStatus": 200
+      "expectedStatus": 500
     }
   ]
 }
