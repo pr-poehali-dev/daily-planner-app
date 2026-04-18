@@ -3,6 +3,7 @@ import Icon from "@/components/ui/icon";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import ProfileModal from "@/components/ProfileModal";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SettingToggle {
   id: string;
@@ -35,6 +36,7 @@ const SettingsPage = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [notifPermission, setNotifPermission] = useState<NotificationPermission | "unsupported">("default");
   const { canInstall, isInstalled, install } = usePWAInstall();
+  const { logout, user } = useAuth();
 
   useEffect(() => {
     if (!("Notification" in window)) { setNotifPermission("unsupported"); return; }
@@ -198,7 +200,14 @@ const SettingsPage = () => {
         </div>
       </div>
 
-      <button className="logout-btn">
+      {user && (
+        <div className="auth-user-info">
+          <Icon name="User" size={14} />
+          <span>{user.email}</span>
+        </div>
+      )}
+
+      <button className="logout-btn" onClick={logout}>
         <Icon name="LogOut" size={16} />
         Выйти из аккаунта
       </button>

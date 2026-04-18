@@ -1,7 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
 import TaskModal, { type NewTask } from "@/components/TaskModal";
+import { api, type Task, type Reminder } from "@/hooks/useApi";
+import { useAuth } from "@/hooks/useAuth";
+import type { Page } from "@/pages/Index";
+
+interface HomePageProps {
+  onNavigate?: (page: Page) => void;
+}
 
 const today = new Date();
 const dayNames = ["воскресенье", "понедельник", "вторник", "среда", "четверг", "пятница", "суббота"];
@@ -18,37 +24,17 @@ function getTodayIso() {
   return `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
 }
 
-interface Task {
-  id: number;
-  text: string;
-  done: boolean;
-  priority: "high" | "medium" | "low";
-  category: string;
-  date: string;
-  time?: string;
-  advance?: string;
-  advanceTime?: string;
-}
-
-interface Reminder {
-  id: number;
-  title: string;
-  time: string;
-  active: boolean;
-}
-
-const initialTasks: Task[] = [
-  { id: 1, text: "Подготовить отчёт за квартал", done: true, priority: "high", category: "Работа", date: getTodayIso() },
-  { id: 2, text: "Созвон с командой в 15:00", done: false, priority: "high", category: "Работа", date: getTodayIso() },
-  { id: 3, text: "Обновить базу контактов", done: false, priority: "medium", category: "Работа", date: getTodayIso() },
-  { id: 4, text: "Купить продукты", done: false, priority: "low", category: "Личное", date: getTodayIso() },
-];
-
-const HomePage = () => {
-  const [tasks, setTasks] = useLocalStorage<Task[]>("diary_tasks", initialTasks);
-  const [reminders] = useLocalStorage<Reminder[]>("diary_reminders", []);
+const HomePage = ({ onNavigate }: HomePageProps) => {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
-  const [profile] = useLocalStorage<{ name: string }>("diary_profile", { name: "Алексей" });
+  const [expanded, setExpanded] = useState(false);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    api.getTasks().then(setTasks).catch(() => {});
+    api.getReminders().then(setReminders).catch(() => {});
+  }, []);
 
   const todayIso = getTodayIso();
   const todayTasks = tasks.filter((t) => t.date === todayIso);
@@ -59,22 +45,25 @@ const HomePage = () => {
   const getInitials = (name: string) =>
     name.trim().split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase() || "?";
 
-  const toggle = (id: number) => {
-    setTasks((prev) => prev.map((t) => t.id === id ? { ...t, done: !t.done } : t));
+  const toggle = async (id: number) => {
+    const t = tasks.find((t) => t.id === id);
+    if (!t) return;
+    const updated = { ...t, done: !t.done };
+    setTasks((prev) => prev.map((x) => x.id === id ? updated : x));
+    await api.updateTask(id, { done: updated.done }).catch(() => {});
   };
 
-  const addTask = (newTask: NewTask) => {
-    setTasks((prev) => [...prev, {
-      id: Date.now(),
+  const addTask = async (newTask: NewTask) => {
+    const created = await api.createTask({
       text: newTask.text,
-      done: false,
       priority: newTask.priority,
       category: newTask.category,
       date: newTask.date,
       time: newTask.time,
       advance: newTask.advance,
       advanceTime: newTask.advanceTime,
-    }]);
+    }).catch(() => null);
+    if (created) setTasks((prev) => [...prev, created]);
   };
 
   return (
@@ -87,7 +76,7 @@ const HomePage = () => {
             {today.getDate()} {monthNames[today.getMonth()]}
           </h1>
         </div>
-        <div className="avatar-circle">{getInitials(profile.name)}</div>
+        <div className="avatar-circle">{user ? getInitials(user.name || user.email) : "?"}</div>
       </div>
 
       {/* Progress */}
@@ -108,21 +97,21 @@ const HomePage = () => {
 
       {/* Quick Stats */}
       <div className="stats-grid">
-        <div className="stat-card">
+        <button className="stat-card" onClick={() => onNavigate?.("tasks")}>
           <Icon name="CheckSquare" size={18} />
           <span className="stat-value">{todayTasks.length}</span>
           <span className="stat-label">Задач сегодня</span>
-        </div>
-        <div className="stat-card">
+        </button>
+        <button className="stat-card" onClick={() => onNavigate?.("tasks")}>
           <Icon name="CheckCircle" size={18} />
           <span className="stat-value">{doneCount}</span>
           <span className="stat-label">Выполнено</span>
-        </div>
-        <div className="stat-card">
+        </button>
+        <button className="stat-card" onClick={() => onNavigate?.("reminders")}>
           <Icon name="Bell" size={18} />
           <span className="stat-value">{activeReminders}</span>
           <span className="stat-label">Напоминаний</span>
-        </div>
+        </button>
       </div>
 
       {/* Tasks today */}
@@ -142,34 +131,55 @@ const HomePage = () => {
               <span>Добавить первую задачу на сегодня</span>
             </div>
           ) : (
-            todayTasks.map((task) => (
-              <div
-                key={task.id}
-                className={`home-task-row ${task.done ? "home-task-row--done" : ""}`}
-                onClick={() => toggle(task.id)}
-              >
-                <span
-                  className="home-task-priority"
-                  style={{ background: priorityColors[task.priority] }}
-                />
-                <div className={`home-task-check ${task.done ? "home-task-check--done" : ""}`}>
-                  {task.done && <Icon name="Check" size={10} />}
+            <>
+              {(expanded ? todayTasks : todayTasks.slice(0, 1)).map((task) => (
+                <div
+                  key={task.id}
+                  className={`home-task-row ${task.done ? "home-task-row--done" : ""}`}
+                  onClick={() => toggle(task.id)}
+                >
+                  <span
+                    className="home-task-priority"
+                    style={{ background: priorityColors[task.priority] }}
+                  />
+                  <div className={`home-task-check ${task.done ? "home-task-check--done" : ""}`}>
+                    {task.done && <Icon name="Check" size={10} />}
+                  </div>
+                  <span className="home-task-text">{task.text}</span>
+                  {task.time && (
+                    <span className="home-task-time">
+                      <Icon name="Clock" size={10} />
+                      {task.time}
+                    </span>
+                  )}
                 </div>
-                <span className="home-task-text">{task.text}</span>
-                {task.time && (
-                  <span className="home-task-time">
-                    <Icon name="Clock" size={10} />
-                    {task.time}
-                  </span>
-                )}
-              </div>
-            ))
-          )}
-          {todayTasks.length > 0 && (
-            <button className="home-task-add" onClick={() => setModalOpen(true)}>
-              <Icon name="Plus" size={13} />
-              Добавить
-            </button>
+              ))}
+
+              {/* Кнопка раскрытия если задач больше одной */}
+              {todayTasks.length > 1 && (
+                <button
+                  className="home-task-expand"
+                  onClick={() => setExpanded((e) => !e)}
+                >
+                  {expanded ? (
+                    <>
+                      <Icon name="ChevronUp" size={13} />
+                      Свернуть
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="ChevronDown" size={13} />
+                      Ещё {todayTasks.length - 1} {todayTasks.length - 1 === 1 ? "задача" : todayTasks.length - 1 < 5 ? "задачи" : "задач"}
+                    </>
+                  )}
+                </button>
+              )}
+
+              <button className="home-task-add" onClick={() => setModalOpen(true)}>
+                <Icon name="Plus" size={13} />
+                Добавить
+              </button>
+            </>
           )}
         </div>
       </div>
