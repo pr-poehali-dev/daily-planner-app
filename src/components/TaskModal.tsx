@@ -65,20 +65,10 @@ const TaskModal = ({ open, onClose, onSave, defaultDate, initial, editMode, onDe
       setAdvanceTime(initial?.advanceTime ?? "");
       setMelody((initial?.melody as MelodyId) ?? "classic");
 
-      // Фиксируем страницу чтобы не было скролла под модалкой
-      const main = document.querySelector(".main-content") as HTMLElement | null;
-      if (main) {
-        main.style.overflow = "hidden";
-      }
-    } else {
-      const main = document.querySelector(".main-content") as HTMLElement | null;
-      if (main) {
-        main.style.overflow = "";
-      }
+      // Скроллим страницу вверх чтобы модалка была видна
+      document.querySelector(".main-content")?.scrollTo({ top: 0 });
     }
     return () => {
-      const main = document.querySelector(".main-content") as HTMLElement | null;
-      if (main) main.style.overflow = "";
     };
   }, [open, defaultDate, initial]);
 

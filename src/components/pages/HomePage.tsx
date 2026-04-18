@@ -109,17 +109,14 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
   };
 
   const openModal = () => {
-    // Скроллим страницу вверх чтобы модалка открывалась от верха
-    containerRef.current?.closest(".main-content")?.scrollTo({ top: 0, behavior: "smooth" });
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    document.querySelector(".main-content")?.scrollTo({ top: 0 });
     setModalOpen(true);
   };
 
   const openEdit = (id: number) => {
     setPreviewTask(null);
     setEditingId(id);
-    containerRef.current?.closest(".main-content")?.scrollTo({ top: 0, behavior: "smooth" });
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    document.querySelector(".main-content")?.scrollTo({ top: 0 });
     setModalOpen(true);
   };
 

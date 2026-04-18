@@ -81,23 +81,19 @@ const TasksPage = () => {
   };
 
   const openModal = useCallback(() => {
-    const main = document.querySelector(".main-content") as HTMLElement | null;
-    if (main) { main.scrollTop = 0; main.style.overflow = "hidden"; }
+    document.querySelector(".main-content")?.scrollTo({ top: 0 });
     setModalOpen(true);
   }, []);
 
   const openEdit = (id: number) => {
     setEditingId(id);
-    const main = document.querySelector(".main-content") as HTMLElement | null;
-    if (main) { main.scrollTop = 0; main.style.overflow = "hidden"; }
+    document.querySelector(".main-content")?.scrollTo({ top: 0 });
     setModalOpen(true);
   };
 
   const closeModal = () => {
     setModalOpen(false);
     setEditingId(null);
-    const main = document.querySelector(".main-content") as HTMLElement | null;
-    if (main) main.style.overflow = "";
   };
 
   const editingTask = editingId !== null ? tasks.find((t) => t.id === editingId) : undefined;
