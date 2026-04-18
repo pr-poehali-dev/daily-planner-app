@@ -19,6 +19,12 @@ const priorityColors: Record<string, string> = {
   low: "#10b981",
 };
 
+const priorityLabel: Record<string, string> = {
+  high: "Высокий",
+  medium: "Средний",
+  low: "Низкий",
+};
+
 function pad(n: number) { return String(n).padStart(2, "0"); }
 function getTodayIso() {
   return `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
@@ -57,6 +63,7 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [previewTask, setPreviewTask] = useState<Task | null>(null);
   const [profile] = useLocalStorage<{ name: string }>("diary_profile", { name: "Алексей" });
 
   const todayIso = getTodayIso();
@@ -86,6 +93,7 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
   };
 
   const openEdit = (id: number) => {
+    setPreviewTask(null);
     setEditingId(id);
     setModalOpen(true);
   };
@@ -178,9 +186,9 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
                 >
                   {task.done && <Icon name="Check" size={10} />}
                 </button>
-                <span className="home-task-text" onClick={() => openEdit(task.id)}>{task.text}</span>
+                <span className="home-task-text" onClick={() => setPreviewTask(task)}>{task.text}</span>
                 {task.time && (
-                  <span className="home-task-time" onClick={() => openEdit(task.id)}>
+                  <span className="home-task-time" onClick={() => setPreviewTask(task)}>
                     <Icon name="Clock" size={10} />
                     {task.time}
                   </span>
@@ -219,6 +227,58 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
           )}
         </div>
       </div>
+
+      {/* Всплывающее окно задачи */}
+      {previewTask && (
+        <div className="task-preview-overlay" onClick={() => setPreviewTask(null)}>
+          <div className="task-preview-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="task-preview-handle" />
+            <div className="task-preview-header">
+              <span
+                className="task-preview-priority-badge"
+                style={{ background: priorityColors[previewTask.priority] }}
+              >
+                {priorityLabel[previewTask.priority]}
+              </span>
+              <button className="task-preview-close" onClick={() => setPreviewTask(null)}>
+                <Icon name="X" size={18} />
+              </button>
+            </div>
+            <p className="task-preview-text">{previewTask.text}</p>
+            <div className="task-preview-meta">
+              {previewTask.time && (
+                <span className="task-preview-meta-item">
+                  <Icon name="Clock" size={14} />
+                  {previewTask.time}
+                </span>
+              )}
+              <span className="task-preview-meta-item">
+                <Icon name="Tag" size={14} />
+                {previewTask.category}
+              </span>
+              <span className={`task-preview-status ${previewTask.done ? "task-preview-status--done" : ""}`}>
+                {previewTask.done ? "Выполнено" : "В работе"}
+              </span>
+            </div>
+            <div className="task-preview-actions">
+              <button
+                className={`task-preview-btn ${previewTask.done ? "task-preview-btn--undo" : "task-preview-btn--done"}`}
+                onClick={() => { toggle(previewTask.id); setPreviewTask(null); }}
+              >
+                <Icon name={previewTask.done ? "RotateCcw" : "Check"} size={15} />
+                {previewTask.done ? "Вернуть в работу" : "Отметить выполненной"}
+              </button>
+              <button
+                className="task-preview-btn task-preview-btn--edit"
+                onClick={() => openEdit(previewTask.id)}
+              >
+                <Icon name="Pencil" size={15} />
+                Редактировать
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <TaskModal
         open={modalOpen}

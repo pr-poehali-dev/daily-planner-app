@@ -125,7 +125,19 @@ const TaskModal = ({ open, onClose, onSave, defaultDate, initial, editMode, onDe
               type="time"
               className="modal-input"
               value={time}
-              onChange={(e) => setTime(e.target.value)}
+              onChange={(e) => {
+                const newTime = e.target.value;
+                setTime(newTime);
+                // Если время задано и уведомление не настроено — автоматом ставим «За 15 мин»
+                if (newTime && advance === "none") {
+                  setAdvance("За 15 мин");
+                }
+                // Если время очищено — сбрасываем заранее
+                if (!newTime) {
+                  setAdvance("none");
+                  setAdvanceTime("");
+                }
+              }}
               placeholder="не задано"
             />
           </div>
@@ -139,10 +151,12 @@ const TaskModal = ({ open, onClose, onSave, defaultDate, initial, editMode, onDe
               <button
                 key={p.value}
                 className={`priority-chip ${priority === p.value ? "priority-chip--active" : ""}`}
-                style={priority === p.value ? { borderColor: p.color, background: p.color + "18" } : {}}
+                style={priority === p.value
+                  ? { borderColor: p.color, background: p.color, color: "#fff" }
+                  : {}}
                 onClick={() => setPriority(p.value)}
               >
-                <span className="priority-dot" style={{ background: p.color }} />
+                <span className="priority-dot" style={{ background: priority === p.value ? "rgba(255,255,255,0.7)" : p.color }} />
                 {p.label}
               </button>
             ))}
