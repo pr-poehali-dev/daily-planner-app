@@ -261,7 +261,7 @@ const TasksPage = () => {
         )}
       </div>
 
-      <button className="fab" onClick={() => setModalOpen(true)}>
+      <button className="fab" onClick={openModal}>
         <Icon name="Plus" size={22} />
       </button>
 
