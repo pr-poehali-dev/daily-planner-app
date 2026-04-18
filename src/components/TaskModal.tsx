@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Icon from "@/components/ui/icon";
 import { MELODY_OPTIONS, playMelody, type MelodyId } from "@/utils/melodies";
 
@@ -44,6 +44,7 @@ const advanceOptions = [
 ];
 
 const TaskModal = ({ open, onClose, onSave, defaultDate, initial, editMode, onDelete, hideDatePicker }: Props) => {
+  const sheetRef = useRef<HTMLDivElement>(null);
   const [text, setText] = useState("");
   const [priority, setPriority] = useState<Priority>("medium");
   const [category, setCategory] = useState("Работа");
@@ -63,6 +64,8 @@ const TaskModal = ({ open, onClose, onSave, defaultDate, initial, editMode, onDe
       setAdvance(initial?.advance ?? "none");
       setAdvanceTime(initial?.advanceTime ?? "");
       setMelody((initial?.melody as MelodyId) ?? "classic");
+      // Сбрасываем скролл в начало при каждом открытии
+      setTimeout(() => sheetRef.current?.scrollTo({ top: 0 }), 0);
     }
   }, [open, defaultDate, initial]);
 
@@ -83,7 +86,7 @@ const TaskModal = ({ open, onClose, onSave, defaultDate, initial, editMode, onDe
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-sheet" ref={sheetRef} onClick={(e) => e.stopPropagation()}>
         <div className="modal-handle" />
 
         <div className="modal-header">
