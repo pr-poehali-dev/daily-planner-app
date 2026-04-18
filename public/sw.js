@@ -1,5 +1,4 @@
 /* Service Worker — Ежедневник */
-const CACHE = "diary-v1";
 const CHECK_INTERVAL = 60; // секунд
 
 self.addEventListener("install", (e) => {
@@ -38,6 +37,8 @@ self.addEventListener("notificationclick", (e) => {
   }
   if (action === "dismiss") {
     dismissedTags.add(tag);
+    // Останавливаем повтор
+    if (repeatTimers[tag]) { clearInterval(repeatTimers[tag]); delete repeatTimers[tag]; }
     broadcastDismiss(tag);
     return;
   }
@@ -57,15 +58,19 @@ self.addEventListener("notificationclick", (e) => {
 });
 
 /* ── Состояние ── */
-const snoozed = {}; // tag -> timestamp until
+const snoozed = {};       // tag -> timestamp until (snooze)
 const dismissedTags = new Set();
+const repeatTimers = {};  // tag -> intervalId (повтор мелодии каждые 3 мин)
 let checkTimer = null;
 
+function broadcastToClients(msg) {
+  self.clients.matchAll({ includeUncontrolled: true }).then((cs) => cs.forEach((c) => c.postMessage(msg)));
+}
 function broadcastSnooze(tag) {
-  self.clients.matchAll().then((cs) => cs.forEach((c) => c.postMessage({ type: "SNOOZED", tag })));
+  broadcastToClients({ type: "SNOOZED", tag });
 }
 function broadcastDismiss(tag) {
-  self.clients.matchAll().then((cs) => cs.forEach((c) => c.postMessage({ type: "DISMISSED", tag })));
+  broadcastToClients({ type: "DISMISSED", tag });
 }
 
 function startChecking() {
@@ -175,7 +180,7 @@ async function checkNotifications() {
     if (snoozed[tag] && Date.now() < snoozed[tag]) return;
     if (fireAt > now || now - fireAt > WINDOW) return;
 
-    // Показываем уведомление
+    // Показываем уведомление с кнопками
     await self.registration.showNotification(title, {
       body,
       tag,
@@ -184,10 +189,38 @@ async function checkNotifications() {
       vibrate: [300, 100, 300, 100, 300],
       requireInteraction: true,
       actions: [
-        { action: "snooze", title: "⏱ Отложить 5 мин" },
-        { action: "dismiss", title: "✓ Выключить" },
+        { action: "dismiss", title: "🔕 Выключить" },
+        { action: "snooze",  title: "⏱ Отложить 5 мин" },
       ],
     });
+
+    // Просим страницу сыграть мелодию (если открыта)
+    broadcastToClients({ type: "PLAY_ALARM", tag });
+
+    // Запускаем повтор каждые 3 минуты если ещё не выключили
+    if (!repeatTimers[tag]) {
+      repeatTimers[tag] = setInterval(async () => {
+        if (dismissedTags.has(tag)) {
+          clearInterval(repeatTimers[tag]);
+          delete repeatTimers[tag];
+          return;
+        }
+        // Повтор: показываем уведомление снова и просим сыграть звук
+        await self.registration.showNotification(title, {
+          body,
+          tag,
+          icon: "/favicon.svg",
+          badge: "/favicon.svg",
+          vibrate: [200, 100, 200],
+          requireInteraction: true,
+          actions: [
+            { action: "dismiss", title: "🔕 Выключить" },
+            { action: "snooze",  title: "⏱ Отложить 5 мин" },
+          ],
+        });
+        broadcastToClients({ type: "PLAY_ALARM", tag });
+      }, 3 * 60 * 1000);
+    }
   };
 
   for (const task of tasks) {

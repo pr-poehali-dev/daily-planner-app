@@ -67,7 +67,7 @@ function playAlarm(repeat = false) {
   }
 }
 
-/* ── Отправка уведомления ── */
+/* ── Отправка уведомления с кнопкой «Выключить» ── */
 function sendNotification(
   title: string,
   body: string,
@@ -84,6 +84,8 @@ function sendNotification(
       badge: "/favicon.svg",
       vibrate: [300, 100, 300, 100, 300],
       requireInteraction: true,
+      // actions поддерживаются только в SW-уведомлениях, поэтому
+      // здесь используем click для dismiss
     } as NotificationOptions);
 
     n.onclick = () => { n.close(); onDismiss?.(tag); };
@@ -159,11 +161,13 @@ function getReminderFireTime(r: Reminder) {
 }
 
 /* ── Регистрация Service Worker ── */
+type DismissCallback = (tag: string) => void;
+ 
+let _swDismissCallback: DismissCallback | null = null;
+
 function registerSW() {
   if (!("serviceWorker" in navigator)) return;
   navigator.serviceWorker.register("/sw.js", { scope: "/" }).then((reg) => {
-    console.log("[SW] registered", reg.scope);
-
     // Слушаем сообщения от SW
     navigator.serviceWorker.addEventListener("message", (e) => {
       if (e.data?.type === "GET_DATA") {
@@ -173,6 +177,14 @@ function registerSW() {
         const settings = JSON.parse(localStorage.getItem("diary_settings") || "[]");
         const notificationsEnabled = settings.find((s: { id: string }) => s.id === "notifications")?.value ?? true;
         port.postMessage({ tasks, reminders, notificationsEnabled });
+      }
+      // SW просит сыграть мелодию (при срабатывании уведомления)
+      if (e.data?.type === "PLAY_ALARM") {
+        playAlarm(false);
+      }
+      // SW сообщает что нажали «Выключить» — останавливаем звук и повтор
+      if (e.data?.type === "DISMISSED") {
+        _swDismissCallback?.(e.data.tag);
       }
     });
 
@@ -195,32 +207,34 @@ export function useTaskNotifications() {
   }, []);
 
   useEffect(() => {
+    // Функция dismiss — останавливает звук и повтор по тегу
     const dismiss = (tag: string) => {
-      firedRef.current.add(tag + "-dismissed");
-      const interval = repeatsRef.current[tag];
-      if (interval) { clearInterval(interval); delete repeatsRef.current[tag]; }
+      // Ищем корневой тег (убираем суффикс -r-...)
+      const rootTag = tag.replace(/-r-\d+$/, "");
+      firedRef.current.add(rootTag + "-dismissed");
+      const interval = repeatsRef.current[rootTag];
+      if (interval) { clearInterval(interval); delete repeatsRef.current[rootTag]; }
     };
+
+    // Регистрируем callback чтобы SW мог вызвать dismiss
+    _swDismissCallback = dismiss;
 
     const fire = (item: { fireAt: number; tag: string; title: string; body: string }) => {
       const { tag, title, body } = item;
       if (firedRef.current.has(tag + "-dismissed")) return;
-      if (firedRef.current.has(tag)) {
-        // уже сработало — проверяем повтор
-        return;
-      }
+      if (firedRef.current.has(tag)) return;
 
       firedRef.current.add(tag);
       sendNotification(title, body, tag, dismiss);
 
-      // Повторять каждые 3 минуты пока не выключат
+      // Повторять каждые 3 минуты пока не выключат (нажмут в уведомлении или тапнут на баннер)
       const interval = setInterval(() => {
         if (firedRef.current.has(tag + "-dismissed")) {
           clearInterval(interval);
           delete repeatsRef.current[tag];
           return;
         }
-        // Снова проиграть звук + показать уведомление
-        sendNotification(title, body + " (повтор)", tag + "-r-" + Date.now(), dismiss);
+        sendNotification(title, body, tag + "-r-" + Date.now(), dismiss);
       }, 3 * 60 * 1000);
 
       repeatsRef.current[tag] = interval;
