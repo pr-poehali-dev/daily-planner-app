@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { playMelody, type MelodyId } from "@/utils/melodies";
 
 interface Task {
   id: number;
@@ -10,6 +11,7 @@ interface Task {
   time?: string;
   advance?: string;
   advanceTime?: string;
+  melody?: MelodyId;
 }
 
 interface Reminder {
@@ -38,36 +40,15 @@ const VAPID_PUBLIC = "BEhRYiBSAvY2_muohII_hUHLNgaB4EOxH4xxvbPSIgpoP9Uoc6K9Kidas2
 const SUBSCRIBE_URL = "https://functions.poehali.dev/54b522c7-94bc-4ba7-87f0-54081021a5da";
 const SYNC_URL = "https://functions.poehali.dev/4833118a-55ec-4b57-8daa-e244ba1e752d";
 
-/* ── Громкая мелодия ── */
-export function playAlarm(repeat = false) {
-  try {
-    const AudioCtx = window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    const ctx = new AudioCtx();
+/* ── Громкая мелодия (legacy — сейчас использует playMelody) ── */
+export function playAlarm(repeat = false, melody: MelodyId = "classic") {
+  playMelody(melody, repeat);
+}
 
-    const tone = (t: number, freq: number, dur: number, vol: number) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = "triangle";
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(vol, t + 0.04);
-      gain.gain.linearRampToValueAtTime(vol * 0.8, t + dur - 0.04);
-      gain.gain.linearRampToValueAtTime(0, t + dur);
-      osc.start(t);
-      osc.stop(t + dur);
-    };
-
-    const now = ctx.currentTime;
-    tone(now + 0.00, 523, 0.18, 1.0); // C5
-    tone(now + 0.22, 659, 0.18, 1.0); // E5
-    tone(now + 0.44, 784, 0.22, 1.0); // G5
-    tone(now + 0.70, 1047, 0.35, 1.0); // C6
-
-    if (repeat) setTimeout(() => playAlarm(false), 1800);
-  } catch { /* AudioContext недоступен */ }
+/* ── Пинг scheduler: дёрнуть сервер чтобы отправил пуш немедленно ── */
+const SCHEDULER_URL_CLIENT = "https://functions.poehali.dev/f10f6f28-103a-4d40-971a-14fa18ae6672";
+export function pingScheduler() {
+  fetch(SCHEDULER_URL_CLIENT, { method: "GET", cache: "no-store" }).catch(() => {});
 }
 
 /* ── Уведомление через браузер ── */
@@ -200,7 +181,7 @@ export function useTaskNotifications() {
 
         // Слушаем события от SW
         navigator.serviceWorker.addEventListener("message", (e) => {
-          if (e.data?.type === "PLAY_ALARM") playAlarm(true);
+          if (e.data?.type === "PLAY_ALARM") playMelody((e.data.melody as MelodyId) || "classic", true);
           if (e.data?.type === "DISMISSED") {
             const tag = e.data.tag;
             firedRef.current.add(tag + "-dismissed");
