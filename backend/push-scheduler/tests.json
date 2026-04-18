@@ -7,10 +7,10 @@
       "expectedStatus": 200
     },
     {
-      "name": "GET scheduler runs",
-      "method": "GET",
+      "name": "OPTIONS works",
+      "method": "OPTIONS",
       "path": "/",
-      "expectedStatus": 500
+      "expectedStatus": 200
     }
   ]
 }
