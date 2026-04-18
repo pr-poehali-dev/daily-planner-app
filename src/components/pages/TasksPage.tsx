@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import Icon from "@/components/ui/icon";
 import TaskModal, { type NewTask } from "@/components/TaskModal";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
@@ -80,8 +80,14 @@ const TasksPage = () => {
     }
   };
 
+  const openModal = useCallback(() => {
+    document.querySelector(".main-content")?.scrollTo({ top: 0, behavior: "smooth" });
+    setModalOpen(true);
+  }, []);
+
   const openEdit = (id: number) => {
     setEditingId(id);
+    document.querySelector(".main-content")?.scrollTo({ top: 0, behavior: "smooth" });
     setModalOpen(true);
   };
 
@@ -152,7 +158,7 @@ const TasksPage = () => {
             <span>{sortMode === "priority" ? "По важности" : "Вручную"}</span>
           </button>
           <span className="badge-count">{doneCount}/{tasks.length}</span>
-          <button className="icon-btn" onClick={() => setModalOpen(true)}>
+          <button className="icon-btn" onClick={openModal}>
             <Icon name="Plus" size={20} />
           </button>
         </div>
