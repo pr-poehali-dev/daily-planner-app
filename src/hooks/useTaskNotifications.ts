@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { syncToIdb } from "./useIdbSync";
 
 export interface ActiveAlarm {
   tag: string;
@@ -213,6 +214,8 @@ export function useTaskNotifications() {
   const [activeAlarms, setActiveAlarms] = useState<ActiveAlarm[]>([]);
 
   useEffect(() => {
+    // При старте — сразу синхронизируем данные в IDB для фонового SW
+    syncToIdb();
     registerSW();
   }, []);
 

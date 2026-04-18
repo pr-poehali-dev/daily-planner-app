@@ -150,24 +150,60 @@ function getReminderFireTime(r) {
   };
 }
 
-async function checkNotifications() {
-  // Читаем данные через клиентов (postMessage)
-  const clients = await self.clients.matchAll({ type: "window" });
-  if (clients.length === 0) {
-    // нет открытых окон — читаем напрямую из IDB не можем, пропускаем
-    return;
-  }
+/* ── IndexedDB helpers (работают без открытой вкладки) ── */
+const DB_NAME = "diary-db";
+const DB_VERSION = 1;
 
-  // Запрашиваем данные у страницы
+function openIdb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = () => {
+      if (!req.result.objectStoreNames.contains("store")) {
+        req.result.createObjectStore("store");
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbGet(key) {
+  const db = await openIdb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("store", "readonly");
+    const req = tx.objectStore("store").get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function readDiaryData() {
+  // Сначала пробуем IDB (работает в фоне)
+  try {
+    const tasks = await idbGet("tasks") || [];
+    const reminders = await idbGet("reminders") || [];
+    const notificationsEnabled = await idbGet("notificationsEnabled") ?? true;
+    if (tasks.length > 0 || reminders.length > 0) {
+      return { tasks, reminders, notificationsEnabled };
+    }
+  } catch { /* fallback ниже */ }
+
+  // Fallback: запросить у открытой вкладки через postMessage
+  const clients = await self.clients.matchAll({ type: "window" });
+  if (clients.length === 0) return null;
+
   const client = clients[0];
   const msgChannel = new MessageChannel();
-
   const data = await new Promise((resolve) => {
     msgChannel.port1.onmessage = (e) => resolve(e.data);
     client.postMessage({ type: "GET_DATA" }, [msgChannel.port2]);
     setTimeout(() => resolve(null), 2000);
   });
+  return data;
+}
 
+async function checkNotifications() {
+  const data = await readDiaryData();
   if (!data) return;
 
   const { tasks = [], reminders = [], notificationsEnabled = true } = data;
